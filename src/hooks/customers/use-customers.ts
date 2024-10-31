@@ -23,10 +23,11 @@ export const useCustomers = () => {
   }, [])
 
   const onAddCustomer = async (data: CustomerSchemaType) => {
+    if (loading) return // Prevent duplicate submissions
     setLoading(true)
     const result = await addCustomer(data)
     if (result.status === 200) {
-      toast({ title: 'Success', description: result.message })
+      toast({ title: 'Success', description: 'Customer added successfully' })
       await fetchCustomers()
     } else {
       toast({ title: 'Error', description: result.message, variant: 'destructive' })
@@ -35,10 +36,11 @@ export const useCustomers = () => {
   }
 
   const onUpdateCustomer = async (id: string, data: CustomerSchemaType) => {
+    if (loading) return // Prevent duplicate submissions
     setLoading(true)
     const result = await updateCustomer(id, data)
     if (result.status === 200) {
-      toast({ title: 'Success', description: result.message })
+      toast({ title: 'Success', description: 'Customer updated successfully' })
       await fetchCustomers()
     } else {
       toast({ title: 'Error', description: result.message, variant: 'destructive' })
@@ -47,10 +49,11 @@ export const useCustomers = () => {
   }
 
   const onDeleteCustomer = async (id: string) => {
+    if (loading) return // Prevent duplicate submissions
     setLoading(true)
     const result = await deleteCustomer(id)
     if (result.status === 200) {
-      toast({ title: 'Success', description: result.message })
+      toast({ title: 'Success', description: 'Customer deleted successfully' })
       await fetchCustomers()
     } else {
       toast({ title: 'Error', description: result.message, variant: 'destructive' })

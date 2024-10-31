@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { DataTable } from './data-table'
+import { DataTable, Customer } from './data-table'
 import { useCustomers } from '@/hooks/customers/use-customers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getVendors } from '@/actions/customers'
 import { CustomerSchemaType } from '@/schemas/customer.schema'
 import { getUserRole } from '@/actions/settings'
+import { Loader } from '../loader'
+import { ColumnDef } from "@tanstack/react-table"
 
-const columns = [
+const columns: ColumnDef<Customer>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "email", header: "Email" },
   { accessorKey: "contactNumber", header: "Contact Number" },
@@ -23,7 +25,7 @@ const columns = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }: { row: { original: { approved: boolean; active: boolean } } }) => {
+    cell: ({ row }) => {
       const approved = row.original.approved
       const active = row.original.active
       let status = "Inactive"
@@ -36,11 +38,11 @@ const columns = [
 ]
 
 export default function CustomersPage() {
-  const { customers, onAddCustomer, onUpdateCustomer, onDeleteCustomer } = useCustomers()
+  const { customers, onAddCustomer, onUpdateCustomer, onDeleteCustomer, loading } = useCustomers()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [currentCustomer, setCurrentCustomer] = useState<CustomerSchemaType | null>(null)
-  const [formData, setFormData] = useState<CustomerSchemaType>({
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null)
+  const [formData, setFormData] = useState<Partial<Customer>>({
     name: '',
     email: '',
     contactNumber: '',
@@ -52,6 +54,7 @@ export default function CustomersPage() {
   })
   const [vendors, setVendors] = useState<{ id: string; name: string; username: string; }[]>([]);
   const [userRole, setUserRole] = useState('')
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
@@ -83,7 +86,7 @@ export default function CustomersPage() {
 
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onAddCustomer(formData)
+    await onAddCustomer(formData as CustomerSchemaType)
     setIsAddDialogOpen(false)
     setFormData({
       name: '',
@@ -100,7 +103,7 @@ export default function CustomersPage() {
   const handleUpdateCustomer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentCustomer) {
-      await onUpdateCustomer(currentCustomer.id!, formData)
+      await onUpdateCustomer(currentCustomer.id, formData as CustomerSchemaType)
     }
     setIsEditDialogOpen(false)
     setCurrentCustomer(null)
@@ -116,9 +119,12 @@ export default function CustomersPage() {
     })
   }
 
-  const handleDeleteCustomer = async (customer: { id: string }) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      await onDeleteCustomer(customer.id)
+  const handleDeleteCustomers = async (ids: string[]) => {
+    if (window.confirm(`Are you sure you want to delete ${ids.length} customer(s)?`)) {
+      for (const id of ids) {
+        await onDeleteCustomer(id)
+      }
+      setSelectedCustomers([])
     }
   }
 
@@ -126,18 +132,19 @@ export default function CustomersPage() {
   const canAddCustomer = userRole === 'contractor' || userRole === 'jen'
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Customers</h1>
+    <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={customers}
-        onAdd={canAddCustomer ? () => setIsAddDialogOpen(true) : () => {}}
+        data={customers as Customer[]}
+        onAdd={canAddCustomer ? () => setIsAddDialogOpen(true) : undefined}
         onEdit={canEditDelete ? (customer) => {
-          setCurrentCustomer(customer as CustomerSchemaType)
-          setFormData(customer as CustomerSchemaType)
+          setCurrentCustomer(customer)
+          setFormData(customer)
           setIsEditDialogOpen(true)
         } : undefined}
-        onDelete={canEditDelete ? handleDeleteCustomer : undefined}
+        onDelete={handleDeleteCustomers}
+        selectedCustomers={selectedCustomers}
+        setSelectedCustomers={setSelectedCustomers}
       />
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -148,8 +155,8 @@ export default function CustomersPage() {
           <form onSubmit={handleAddCustomer} className="space-y-4">
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="email" placeholder="Email" type="email" value={formData.email || ''} onChange={handleInputChange} />
-            <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
-            <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
+            <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber || ''} onChange={handleInputChange} required />
+            <Input name="address" placeholder="Address" value={formData.address || ''} onChange={handleInputChange} required />
             <Select name="type" value={formData.type} onValueChange={handleSelectChange('type')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select customer type" />
@@ -159,7 +166,7 @@ export default function CustomersPage() {
                 <SelectItem value="private">Private</SelectItem>
               </SelectContent>
             </Select>
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || ''} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
@@ -179,7 +186,9 @@ export default function CustomersPage() {
               <Switch id="active" checked={formData.active} onCheckedChange={handleSwitchChange('active')} />
               <label htmlFor="active">Active</label>
             </div>
-            <Button type="submit">Add Customer</Button>
+            <Button type="submit">
+              <Loader loading={loading}>Submit</Loader>
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -192,8 +201,8 @@ export default function CustomersPage() {
           <form onSubmit={handleUpdateCustomer} className="space-y-4">
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="email" placeholder="Email" type="email" value={formData.email || ''} onChange={handleInputChange} />
-            <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
-            <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
+            <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber || ''} onChange={handleInputChange} required />
+            <Input name="address" placeholder="Address" value={formData.address || ''} onChange={handleInputChange} required />
             <Select name="type" value={formData.type} onValueChange={handleSelectChange('type')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select customer type" />
@@ -203,14 +212,14 @@ export default function CustomersPage() {
                 <SelectItem value="private">Private</SelectItem>
               </SelectContent>
             </Select>
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || ''} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
               <SelectContent>
                 {vendors.map((vendor) => (
                   <SelectItem key={vendor.id} value={vendor.id}>
-                    {vendor.name}
+                    {vendor.name} - {vendor.username}
                   </SelectItem>
                 ))}
               </SelectContent>
