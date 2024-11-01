@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { DataTable } from './data-table'
+import { DataTable, Vehicle } from './data-table'
 import { useVehicles } from '@/hooks/vehicles/use-vehicles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getVendors } from '@/actions/vehicles'
 import { VehicleSchemaType } from '@/schemas/vehicle.schema'
 import { getUserRole } from '@/actions/settings'
+import { Loader } from '../loader'
+import { ColumnDef } from "@tanstack/react-table"
 
-const columns = [
+const columns: ColumnDef<Vehicle>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "address", header: "Address" },
   { accessorKey: "contactNumber", header: "Contact Number" },
@@ -22,11 +24,11 @@ const columns = [
 ]
 
 export default function VehiclesPage() {
-  const { vehicles, onAddVehicle, onUpdateVehicle, onDeleteVehicle } = useVehicles()
+  const { vehicles, onAddVehicle, onUpdateVehicle, onDeleteVehicle, loading } = useVehicles()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [currentVehicle, setCurrentVehicle] = useState<VehicleSchemaType | null>(null)
-  const [formData, setFormData] = useState<VehicleSchemaType>({
+  const [currentVehicle, setCurrentVehicle] = useState<Vehicle | null>(null)
+  const [formData, setFormData] = useState<Partial<Vehicle>>({
     name: '',
     address: '',
     contactNumber: '',
@@ -36,6 +38,7 @@ export default function VehiclesPage() {
   })
   const [vendors, setVendors] = useState<{ id: string; name: string; username: string; }[]>([])
   const [userRole, setUserRole] = useState('')
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
@@ -63,7 +66,7 @@ export default function VehiclesPage() {
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onAddVehicle(formData)
+    await onAddVehicle(formData as VehicleSchemaType)
     setIsAddDialogOpen(false)
     setFormData({
       name: '',
@@ -78,7 +81,7 @@ export default function VehiclesPage() {
   const handleUpdateVehicle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentVehicle) {
-      await onUpdateVehicle(currentVehicle.id!, formData)
+      await onUpdateVehicle(currentVehicle.id, formData as VehicleSchemaType)
     }
     setIsEditDialogOpen(false)
     setCurrentVehicle(null)
@@ -92,9 +95,12 @@ export default function VehiclesPage() {
     })
   }
 
-  const handleDeleteVehicle = async (vehicle: { id: string }) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
-      await onDeleteVehicle(vehicle.id)
+  const handleDeleteVehicles = async (ids: string[]) => {
+    if (window.confirm(`Are you sure you want to delete ${ids.length} vehicle(s)?`)) {
+      for (const id of ids) {
+        await onDeleteVehicle(id)
+      }
+      setSelectedVehicles([])
     }
   }
 
@@ -102,18 +108,19 @@ export default function VehiclesPage() {
   const canAddVehicle = userRole === 'contractor' || userRole === 'jen'
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Vehicles</h1>
+    <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={vehicles}
-        onAdd={canAddVehicle ? () => setIsAddDialogOpen(true) : () => {}}
+        data={vehicles as Vehicle[]}
+        onAdd={canAddVehicle ? () => setIsAddDialogOpen(true) : undefined}
         onEdit={canEditDelete ? (vehicle) => {
-          setCurrentVehicle(vehicle as VehicleSchemaType)
-          setFormData(vehicle as VehicleSchemaType)
+          setCurrentVehicle(vehicle)
+          setFormData(vehicle)
           setIsEditDialogOpen(true)
         } : undefined}
-        onDelete={canEditDelete ? handleDeleteVehicle : undefined}
+        onDelete={handleDeleteVehicles}
+        selectedVehicles={selectedVehicles}
+        setSelectedVehicles={setSelectedVehicles}
       />
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -125,9 +132,9 @@ export default function VehiclesPage() {
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
-            <Input name="email" placeholder="Email" type="email" value={formData.email} onChange={handleInputChange} required />
+            <Input name="email" placeholder="Email" type="email" value={formData.email || ''} onChange={handleInputChange} required />
             <Input name="vehicleNumber" placeholder="Vehicle Number" value={formData.vehicleNumber} onChange={handleInputChange} required />
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || ''} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
@@ -139,7 +146,9 @@ export default function VehiclesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit">Add Vehicle</Button>
+            <Button type="submit">
+              <Loader loading={loading}>Submit</Loader>
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -153,9 +162,9 @@ export default function VehiclesPage() {
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
-            <Input name="email" placeholder="Email" type="email" value={formData.email} onChange={handleInputChange} required />
+            <Input name="email" placeholder="Email" type="email" value={formData.email || ''} onChange={handleInputChange} required />
             <Input name="vehicleNumber" placeholder="Vehicle Number" value={formData.vehicleNumber} onChange={handleInputChange} required />
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || ''} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>

@@ -32,21 +32,39 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 
-interface DataTableProps<TData, TValue> {
+export interface Vehicle {
+  id: string;
+  name: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  vehicleNumber: string;
+  vendorId: string;
+  jenId: string | null;
+  vendor?: { username: string };
+  jen?: { username: string };
+}
+
+interface DataTableProps<TData extends Vehicle, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAdd?: () => void
   onEdit?: (row: TData) => void
-  onDelete?: (row: TData) => void
+  onDelete: (ids: string[]) => void
+  selectedVehicles: string[]
+  setSelectedVehicles: React.Dispatch<React.SetStateAction<string[]>>
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends Vehicle, TValue>({
   columns,
   data,
   onAdd,
   onEdit,
   onDelete,
+  selectedVehicles,
+  setSelectedVehicles,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -72,6 +90,22 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleSelectVehicle = (vehicleId: string) => {
+    setSelectedVehicles(prev => 
+      prev.includes(vehicleId) 
+        ? prev.filter(id => id !== vehicleId)
+        : [...prev, vehicleId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedVehicles.length === data.length) {
+      setSelectedVehicles([])
+    } else {
+      setSelectedVehicles(data.map(vehicle => vehicle.id))
+    }
+  }
+
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
@@ -83,41 +117,54 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        {onAdd && (
-          <Button onClick={onAdd} className="ml-auto">
-            Add Vehicle
-          </Button>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-2">
-              Columns
+        <div className="ml-auto flex items-center space-x-2">
+          {onAdd && (
+            <Button onClick={onAdd}>
+              Add Vehicle
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          {selectedVehicles.length > 0 && (
+            <Button variant="destructive" onClick={() => onDelete(selectedVehicles)}>
+              Delete Selected ({selectedVehicles.length})
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                <TableHead>
+                  <Checkbox
+                    checked={selectedVehicles.length === data.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}>
@@ -130,6 +177,7 @@ export function DataTable<TData, TValue>({
                     </TableHead>
                   )
                 })}
+                {onEdit && <TableHead>Actions</TableHead>}
               </TableRow>
             ))}
           </TableHeader>
@@ -139,31 +187,31 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={selectedVehicles.includes(row.original.id) ? "bg-muted" : ""}
                 >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedVehicles.includes(row.original.id)}
+                      onCheckedChange={() => handleSelectVehicle(row.original.id)}
+                    />
+                  </TableCell>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-                  {(onEdit || onDelete) && (
+                  {onEdit && (
                     <TableCell>
-                      {onEdit && (
-                        <Button variant="outline" className="mr-2" onClick={() => onEdit(row.original)}>
-                          Edit
-                        </Button>
-                      )}
-                      {onDelete && (
-                        <Button variant="destructive" onClick={() => onDelete(row.original)}>
-                          Delete
-                        </Button>
-                      )}
+                      <Button variant="outline" onClick={() => onEdit(row.original)}>
+                        Edit
+                      </Button>
                     </TableCell>
                   )}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={columns.length + 2} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -173,8 +221,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {selectedVehicles.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="space-x-2">
           <Button
