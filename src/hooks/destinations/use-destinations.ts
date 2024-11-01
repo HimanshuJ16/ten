@@ -24,7 +24,14 @@ export const useDestinations = () => {
 
   const onAddDestination = async (data: DestinationSchemaType) => {
     setLoading(true)
-    const result = await addDestination(data)
+    // Ensure latitude and longitude are numbers if they're provided; otherwise, set them to null
+    const normalizedData = {
+      ...data,
+      latitude: Number(data.latitude) || 0,
+      longitude: Number(data.longitude) || 0,
+    }
+
+    const result = await addDestination(normalizedData)
     if (result.status === 200) {
       toast({ title: 'Success', description: result.message })
       await fetchDestinations()
@@ -36,7 +43,13 @@ export const useDestinations = () => {
 
   const onUpdateDestination = async (id: string, data: DestinationSchemaType) => {
     setLoading(true)
-    const result = await updateDestination(id, data)
+    const normalizedData = {
+      ...data,
+      latitude: Number(data.latitude) || 0,
+      longitude: Number(data.longitude) || 0,
+    }
+
+    const result = await updateDestination(id, normalizedData)
     if (result.status === 200) {
       toast({ title: 'Success', description: result.message })
       await fetchDestinations()
