@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { DataTable } from './data-table'
+import { DataTable, Hydrant } from './data-table'
 import { useHydrants } from '@/hooks/hydrants/use-hydrants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getVendors } from '@/actions/hydrant'
 import { HydrantSchemaType } from '@/schemas/hydrant.schema'
 import { getUserRole } from '@/actions/settings'
+import { Loader } from '../loader'
+import { ColumnDef } from "@tanstack/react-table"
 
-const columns = [
+const columns: ColumnDef<Hydrant>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "address", header: "Address" },
   { accessorKey: "contactNumber", header: "Contact Number" },
@@ -23,21 +25,22 @@ const columns = [
 ]
 
 export default function HydrantsPage() {
-  const { hydrants, onAddHydrant, onUpdateHydrant, onDeleteHydrant } = useHydrants()
+  const { hydrants, onAddHydrant, onUpdateHydrant, onDeleteHydrant, loading } = useHydrants()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [currentHydrant, setCurrentHydrant] = useState<HydrantSchemaType | null>(null)
-  const [formData, setFormData] = useState<HydrantSchemaType>({
+  const [currentHydrant, setCurrentHydrant] = useState<Hydrant | null>(null)
+  const [formData, setFormData] = useState<Partial<Hydrant>>({
     name: '',
     address: '',
     contactNumber: '',
     email: '',
-    latitude: 0,
-    longitude: 0,
+    latitude: undefined,
+    longitude: undefined,
     vendorId: '',
   })
   const [vendors, setVendors] = useState<{ id: string; name: string; username: string; }[]>([])
   const [userRole, setUserRole] = useState('')
+  const [selectedHydrants, setSelectedHydrants] = useState<string[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
@@ -56,9 +59,11 @@ export default function HydrantsPage() {
   }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.name === 'latitude' || e.target.name === 'longitude'
-      ? parseFloat(e.target.value)
-      : e.target.value
+    const value = e.target.value
+      ? e.target.name === 'latitude' || e.target.name === 'longitude'
+        ? parseFloat(e.target.value)
+        : e.target.value
+      : null
     setFormData({ ...formData, [e.target.name]: value })
   }
 
@@ -68,15 +73,15 @@ export default function HydrantsPage() {
 
   const handleAddHydrant = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onAddHydrant(formData)
+    await onAddHydrant(formData as HydrantSchemaType)
     setIsAddDialogOpen(false)
     setFormData({
       name: '',
       address: '',
       contactNumber: '',
       email: '',
-      latitude: 0,
-      longitude: 0,
+      latitude: undefined,
+      longitude: undefined,
       vendorId: '',
     })
   }
@@ -84,7 +89,7 @@ export default function HydrantsPage() {
   const handleUpdateHydrant = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentHydrant) {
-      await onUpdateHydrant(currentHydrant.id!, formData)
+      await onUpdateHydrant(currentHydrant.id, formData as HydrantSchemaType)
     }
     setIsEditDialogOpen(false)
     setCurrentHydrant(null)
@@ -93,15 +98,18 @@ export default function HydrantsPage() {
       address: '',
       contactNumber: '',
       email: '',
-      latitude: 0,
-      longitude: 0,
+      latitude: undefined,
+      longitude: undefined,
       vendorId: '',
     })
   }
 
-  const handleDeleteHydrant = async (hydrant: { id: string }) => {
-    if (window.confirm('Are you sure you want to delete this hydrant?')) {
-      await onDeleteHydrant(hydrant.id)
+  const handleDeleteHydrants = async (ids: string[]) => {
+    if (window.confirm(`Are you sure you want to delete ${ids.length} hydrant(s)?`)) {
+      for (const id of ids) {
+        await onDeleteHydrant(id)
+      }
+      setSelectedHydrants([])
     }
   }
 
@@ -109,18 +117,19 @@ export default function HydrantsPage() {
   const canAddHydrant = userRole === 'contractor' || userRole === 'jen'
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Hydrants</h1>
+    <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={hydrants}
+        data={hydrants as Hydrant[]}
         onAdd={canAddHydrant ? () => setIsAddDialogOpen(true) : undefined}
         onEdit={canEditDelete ? (hydrant) => {
-          setCurrentHydrant(hydrant as HydrantSchemaType)
-          setFormData(hydrant as HydrantSchemaType)
+          setCurrentHydrant(hydrant)
+          setFormData(hydrant)
           setIsEditDialogOpen(true)
         } : undefined}
-        onDelete={canEditDelete ? handleDeleteHydrant : undefined}
+        onDelete={handleDeleteHydrants}
+        selectedHydrants={selectedHydrants}
+        setSelectedHydrants={setSelectedHydrants}
       />
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -133,8 +142,8 @@ export default function HydrantsPage() {
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
             <Input name="email" placeholder="Email" type="email" value={formData.email} onChange={handleInputChange} required />
-            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude} onChange={handleInputChange} required />
-            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude} onChange={handleInputChange} required />
+            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
+            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
             <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
@@ -147,7 +156,9 @@ export default function HydrantsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit">Add Hydrant</Button>
+            <Button type="submit">
+              <Loader loading={loading}>Submit</Loader>
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -162,8 +173,8 @@ export default function HydrantsPage() {
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleInputChange} required />
             <Input name="email" placeholder="Email" type="email" value={formData.email} onChange={handleInputChange} required />
-            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude} onChange={handleInputChange} required />
-            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude} onChange={handleInputChange} required />
+            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
+            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
             <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />

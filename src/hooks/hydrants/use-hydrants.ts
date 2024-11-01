@@ -24,7 +24,13 @@ export const useHydrants = () => {
 
   const onAddHydrant = async (data: HydrantSchemaType) => {
     setLoading(true)
-    const result = await addHydrant(data)
+    const normalizedData = {
+      ...data,
+      latitude: Number(data.latitude) || 0,
+      longitude: Number(data.longitude) || 0,
+    }
+
+    const result = await addHydrant(normalizedData)
     if (result.status === 200) {
       toast({ title: 'Success', description: result.message })
       await fetchHydrants()
@@ -36,7 +42,13 @@ export const useHydrants = () => {
 
   const onUpdateHydrant = async (id: string, data: HydrantSchemaType) => {
     setLoading(true)
-    const result = await updateHydrant(id, data)
+    const normalizedData = {
+      ...data,
+      latitude: Number(data.latitude) || 0,
+      longitude: Number(data.longitude) || 0,
+    }
+
+    const result = await updateHydrant(id, normalizedData)
     if (result.status === 200) {
       toast({ title: 'Success', description: result.message })
       await fetchHydrants()
