@@ -94,9 +94,9 @@ export default function DestinationsPage() {
       address: '',
       latitude: null,
       longitude: null,
-      agree: false,
-      active: false,
-      approved: false,
+      agree: true,
+      active: true,
+      approved: true,
       vendorId: '',
     })
   }
@@ -113,9 +113,9 @@ export default function DestinationsPage() {
       address: '',
       latitude: null,
       longitude: null,
-      agree: false,
-      active: false,
-      approved: false,
+      agree: true,
+      active: true,
+      approved: true,
       vendorId: '',
     })
   }
