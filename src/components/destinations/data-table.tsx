@@ -32,25 +32,43 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 
-interface DataTableProps<TData, TValue> {
+export interface Destination {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  agree: boolean;
+  active: boolean;
+  approved: boolean;
+  vendorId: string | null;
+  jenId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  vendor?: { username: string };
+  jen?: { username: string };
+}
+
+interface DataTableProps<TData extends Destination, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAdd?: () => void
   onEdit?: (row: TData) => void
-  onDelete?: (row: TData) => void
-  filterColumn?: string
-  addButtonText?: string
+  onDelete: (ids: string[]) => void
+  selectedDestinations: string[]
+  setSelectedDestinations: React.Dispatch<React.SetStateAction<string[]>>
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends Destination, TValue>({
   columns,
   data,
   onAdd,
   onEdit,
   onDelete,
-  filterColumn = "name",
-  addButtonText = "Add Destination",
+  selectedDestinations,
+  setSelectedDestinations,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -76,52 +94,82 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleSelectDestination = (destinationId: string) => {
+    setSelectedDestinations(prev => 
+      prev.includes(destinationId) 
+        ? prev.filter(id => id !== destinationId)
+        : [...prev, destinationId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedDestinations.length === data.length) {
+      setSelectedDestinations([])
+    } else {
+      setSelectedDestinations(data.map(destination => destination.id))
+    }
+  }
+
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder={`Filter by ${filterColumn}...`}
-          value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""}
+          placeholder="Filter by name..."
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+            table.getColumn("name")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
-        {onAdd && (
-          <Button onClick={onAdd} className="ml-auto">
-            {addButtonText}
-          </Button>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-2">
-              Columns
+        <div className="ml-auto flex items-center space-x-2">
+          {onAdd && (
+            <Button onClick={onAdd}>
+              Add Destination
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          {selectedDestinations.length > 0 && (
+            <Button variant="destructive" onClick={() => onDelete(selectedDestinations)}>
+              Delete Selected ({selectedDestinations.length})
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                <TableHead>
+                  <Checkbox
+                    checked={selectedDestinations.length === data.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}>
@@ -134,7 +182,7 @@ export function DataTable<TData, TValue>({
                     </TableHead>
                   )
                 })}
-                {(onEdit || onDelete) && <TableHead>Actions</TableHead>}
+                {onEdit && <TableHead>Actions</TableHead>}
               </TableRow>
             ))}
           </TableHeader>
@@ -144,31 +192,31 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={selectedDestinations.includes(row.original.id) ? "bg-muted" : ""}
                 >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedDestinations.includes(row.original.id)}
+                      onCheckedChange={() => handleSelectDestination(row.original.id)}
+                    />
+                  </TableCell>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-                  {(onEdit || onDelete) && (
+                  {onEdit && (
                     <TableCell>
-                      {onEdit && (
-                        <Button variant="outline" className="mr-2" onClick={() => onEdit(row.original)}>
-                          Edit
-                        </Button>
-                      )}
-                      {onDelete && (
-                        <Button variant="destructive" onClick={() => onDelete(row.original)}>
-                          Delete
-                        </Button>
-                      )}
+                      <Button variant="outline" onClick={() => onEdit(row.original)}>
+                        Edit
+                      </Button>
                     </TableCell>
                   )}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="h-24 text-center">
+                <TableCell colSpan={columns.length + 2} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -178,8 +226,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {selectedDestinations.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="space-x-2">
           <Button

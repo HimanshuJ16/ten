@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { DataTable } from './data-table'
+import { DataTable, Destination } from './data-table'
 import { useDestinations } from '@/hooks/destinations/use-destinations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getVendors } from '@/actions/destinations'
 import { DestinationSchemaType } from '@/schemas/destination.schema'
 import { getUserRole } from '@/actions/settings'
+import { Loader } from '../loader'
+import { ColumnDef } from "@tanstack/react-table"
 
-const columns = [
+const columns: ColumnDef<Destination>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "address", header: "Address" },
   { accessorKey: "latitude", header: "Latitude" },
@@ -22,7 +24,7 @@ const columns = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }: { row: { original: { approved: boolean; active: boolean; agree: boolean } } }) => {
+    cell: ({ row }) => {
       const { approved, active, agree } = row.original
       let status = "Inactive"
       if (approved && active && agree) status = "Active"
@@ -35,11 +37,11 @@ const columns = [
 ]
 
 export default function DestinationsPage() {
-  const { destinations, onAddDestination, onUpdateDestination, onDeleteDestination } = useDestinations()
+  const { destinations, onAddDestination, onUpdateDestination, onDeleteDestination, loading } = useDestinations()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [currentDestination, setCurrentDestination] = useState<DestinationSchemaType | null>(null)
-  const [formData, setFormData] = useState<DestinationSchemaType>({
+  const [currentDestination, setCurrentDestination] = useState<Destination | null>(null)
+  const [formData, setFormData] = useState<Partial<Destination>>({
     name: '',
     address: '',
     latitude: null,
@@ -51,6 +53,7 @@ export default function DestinationsPage() {
   })
   const [vendors, setVendors] = useState<{ id: string; name: string; username: string; }[]>([])
   const [userRole, setUserRole] = useState('')
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([])
 
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
@@ -73,7 +76,7 @@ export default function DestinationsPage() {
       ? e.target.name === 'latitude' || e.target.name === 'longitude'
         ? parseFloat(e.target.value)
         : e.target.value
-      : null // Set to null if the input is empty
+      : null
     setFormData({ ...formData, [e.target.name]: value })
   }
 
@@ -87,7 +90,7 @@ export default function DestinationsPage() {
 
   const handleAddDestination = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onAddDestination(formData)
+    await onAddDestination(formData as DestinationSchemaType)
     setIsAddDialogOpen(false)
     setFormData({
       name: '',
@@ -104,7 +107,7 @@ export default function DestinationsPage() {
   const handleUpdateDestination = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentDestination) {
-      await onUpdateDestination(currentDestination.id!, formData)
+      await onUpdateDestination(currentDestination.id, formData as DestinationSchemaType)
     }
     setIsEditDialogOpen(false)
     setCurrentDestination(null)
@@ -120,9 +123,12 @@ export default function DestinationsPage() {
     })
   }
 
-  const handleDeleteDestination = async (destination: { id: string }) => {
-    if (window.confirm('Are you sure you want to delete this destination?')) {
-      await onDeleteDestination(destination.id)
+  const handleDeleteDestinations = async (ids: string[]) => {
+    if (window.confirm(`Are you sure you want to delete ${ids.length} destination(s)?`)) {
+      for (const id of ids) {
+        await onDeleteDestination(id)
+      }
+      setSelectedDestinations([])
     }
   }
 
@@ -130,17 +136,19 @@ export default function DestinationsPage() {
   const canAddDestination = userRole === 'contractor' || userRole === 'jen'
 
   return (
-    <div>
+    <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={destinations}
+        data={destinations as Destination[]}
         onAdd={canAddDestination ? () => setIsAddDialogOpen(true) : undefined}
         onEdit={canEditDelete ? (destination) => {
-          setCurrentDestination(destination as DestinationSchemaType)
-          setFormData(destination as DestinationSchemaType)
+          setCurrentDestination(destination)
+          setFormData(destination)
           setIsEditDialogOpen(true)
         } : undefined}
-        onDelete={canEditDelete ? handleDeleteDestination : undefined}
+        onDelete={handleDeleteDestinations}
+        selectedDestinations={selectedDestinations}
+        setSelectedDestinations={setSelectedDestinations}
       />
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -153,7 +161,7 @@ export default function DestinationsPage() {
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
             <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || undefined} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
@@ -177,7 +185,9 @@ export default function DestinationsPage() {
               <Switch id="approved" checked={formData.approved} onCheckedChange={handleSwitchChange('approved')} />
               <label htmlFor="approved">Approved</label>
             </div>
-            <Button type="submit">Add Destination</Button>
+            <Button type="submit">
+              <Loader loading={loading}>Submit</Loader>
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -192,7 +202,7 @@ export default function DestinationsPage() {
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
             <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
             <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId || undefined} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
