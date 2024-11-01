@@ -42,11 +42,11 @@ export default function DestinationsPage() {
   const [formData, setFormData] = useState<DestinationSchemaType>({
     name: '',
     address: '',
-    latitude: 0,
-    longitude: 0,
-    agree: false,
-    active: false,
-    approved: false,
+    latitude: null,
+    longitude: null,
+    agree: true,
+    active: true,
+    approved: true,
     vendorId: '',
   })
   const [vendors, setVendors] = useState<{ id: string; name: string; username: string; }[]>([])
@@ -69,9 +69,11 @@ export default function DestinationsPage() {
   }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.name === 'latitude' || e.target.name === 'longitude'
-      ? parseFloat(e.target.value)
-      : e.target.value
+    const value = e.target.value
+      ? e.target.name === 'latitude' || e.target.name === 'longitude'
+        ? parseFloat(e.target.value)
+        : e.target.value
+      : null // Set to null if the input is empty
     setFormData({ ...formData, [e.target.name]: value })
   }
 
@@ -90,8 +92,8 @@ export default function DestinationsPage() {
     setFormData({
       name: '',
       address: '',
-      latitude: 0,
-      longitude: 0,
+      latitude: null,
+      longitude: null,
       agree: false,
       active: false,
       approved: false,
@@ -109,8 +111,8 @@ export default function DestinationsPage() {
     setFormData({
       name: '',
       address: '',
-      latitude: 0,
-      longitude: 0,
+      latitude: null,
+      longitude: null,
       agree: false,
       active: false,
       approved: false,
@@ -129,7 +131,6 @@ export default function DestinationsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Destinations</h1>
       <DataTable
         columns={columns}
         data={destinations}
@@ -150,8 +151,8 @@ export default function DestinationsPage() {
           <form onSubmit={handleAddDestination} className="space-y-4">
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
-            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude} onChange={handleInputChange} required />
-            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude} onChange={handleInputChange} required />
+            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
+            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
             <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
@@ -189,8 +190,8 @@ export default function DestinationsPage() {
           <form onSubmit={handleUpdateDestination} className="space-y-4">
             <Input name="name" placeholder="Name" value={formData.name} onChange={handleInputChange} required />
             <Input name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} required />
-            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude} onChange={handleInputChange} required />
-            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude} onChange={handleInputChange} required />
+            <Input name="latitude" placeholder="Latitude" type="number" value={formData.latitude ?? ''} onChange={handleInputChange} required />
+            <Input name="longitude" placeholder="Longitude" type="number" value={formData.longitude ?? ''} onChange={handleInputChange} required />
             <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
