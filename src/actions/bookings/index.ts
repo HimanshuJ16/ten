@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from  'next/headers'
 import { verify } from 'jsonwebtoken'
 import { BookingSchemaType } from '@/schemas/booking.schema'
+import { Prisma } from '@prisma/client'
 
 interface JwtPayload {
   userId: string;
@@ -40,6 +41,15 @@ export const getBookings = async () => {
   try {
     let bookings
 
+    const includeRelations = {
+      vendor: true,
+      jen: true,
+      customer: true,
+      vehicle: true,
+      hydrant: true,
+      destination: true
+    }
+
     switch (currentUser.role) {
       case 'contractor':
         bookings = await client.booking.findMany({
@@ -50,14 +60,7 @@ export const getBookings = async () => {
               }
             }
           },
-          include: {
-            vendor: true,
-            jen: true,
-            customer: true,
-            vehicle: true,
-            hydrant: true,
-            destination: true
-          }
+          include: includeRelations
         })
         break
 
@@ -70,14 +73,7 @@ export const getBookings = async () => {
               }
             }
           },
-          include: {
-            vendor: true,
-            jen: true,
-            customer: true,
-            vehicle: true,
-            hydrant: true,
-            destination: true
-          }
+          include: includeRelations
         })
         break
 
@@ -86,14 +82,7 @@ export const getBookings = async () => {
           where: {
             jen: { username: currentUser.username }
           },
-          include: {
-            vendor: true,
-            jen: true,
-            customer: true,
-            vehicle: true,
-            hydrant: true,
-            destination: true
-          }
+          include: includeRelations
         })
         break
 
@@ -102,14 +91,7 @@ export const getBookings = async () => {
           where: {
             vendor: { username: currentUser.username }
           },
-          include: {
-            vendor: true,
-            jen: true,
-            customer: true,
-            vehicle: true,
-            hydrant: true,
-            destination: true
-          }
+          include: includeRelations
         })
         break
 
@@ -172,30 +154,44 @@ export const updateBooking = async (id: string, data: BookingSchemaType) => {
     return { status: 403, message: 'Unauthorized to update bookings' }
   }
 
+  if (!id || id.trim() === '') {
+    return { status: 400, message: 'Invalid booking ID' }
+  }
+
   try {
+    const updateData: Prisma.BookingUpdateInput = {}
+
+    if (data.vehicleId && data.vehicleId.trim() !== '') {
+      updateData.vehicle = { connect: { id: data.vehicleId } }
+    }
+
+    if (data.destinationId && data.destinationId.trim() !== '') {
+      updateData.destination = { connect: { id: data.destinationId } }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { status: 400, message: 'No valid data to update' }
+    }
+
     const updatedBooking = await client.booking.update({
       where: { id },
-      data: {
-        type: data.type,
-        bookingType: data.bookingType,
-        scheduledDateTime: data.scheduledDateTime,
-        vendor: { connect: { id: data.vendorId } },
-        customer: { connect: { id: data.customerId } },
-        vehicle: { connect: { id: data.vehicleId } },
-        hydrant: { connect: { id: data.hydrantId } },
-        destination: { connect: { id: data.destinationId } },
-      },
+      data: updateData,
     })
 
     revalidatePath('/bookings')
     return { status: 200, message: 'Booking updated successfully', data: updatedBooking }
   } catch (error) {
     console.error('Error updating booking:', error)
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2023') {
+        return { status: 400, message: 'Invalid booking ID format' }
+      }
+    }
     return { status: 500, message: 'Internal server error' }
   }
 }
 
-export const deleteBooking = async (id: string) => {
+export const deleteBooking = async (idOrIds: string | string[]) => {
   const currentUser = await getCurrentUser()
   if (!currentUser) return { status: 401, message: 'Unauthorized' }
 
@@ -204,12 +200,20 @@ export const deleteBooking = async (id: string) => {
   }
 
   try {
-    await client.booking.delete({
-      where: { id },
-    })
+    if (Array.isArray(idOrIds)) {
+      await client.booking.deleteMany({
+        where: {
+          id: { in: idOrIds }
+        }
+      })
+    } else {
+      await client.booking.delete({
+        where: { id: idOrIds }
+      })
+    }
 
     revalidatePath('/bookings')
-    return { status: 200, message: 'Booking deleted successfully' }
+    return { status: 200, message: 'Booking(s) deleted successfully' }
   } catch (error) {
     console.error('Error deleting booking:', error)
     return { status: 500, message: 'Internal server error' }
@@ -308,8 +312,8 @@ export const getVendors = async () => {
         })
         break
 
-      // default:
-      //   throw new Error('Unauthorized to fetch vendors')
+      default:
+        throw new Error('Unauthorized to fetch vendors')
     }
 
     return { status: 200, data: vendors }
@@ -341,6 +345,3 @@ export const getVendorDetails = async (vendorId: string) => {
     return { status: 500, message: 'Internal server error' }
   }
 }
-
-// The getVendorDetails function now replaces the need for separate
-// getCustomers, getVehicles, getHydrants, and getDestinations functions

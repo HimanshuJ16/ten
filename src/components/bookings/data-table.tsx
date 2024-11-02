@@ -13,6 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import { format } from "date-fns"
 
 import {
   Table,
@@ -23,42 +24,69 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { DateRange } from "react-day-picker"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  onAdd?: () => void
-  onEdit?: (row: TData) => void
-  onDelete?: (row: TData) => void
-  onApprove?: (row: TData) => void
-  onDisapprove?: (row: TData) => void
+export interface Booking {
+  approved: boolean | undefined
+  id: string
+  type: string
+  bookingType: string
+  scheduledDateTime: Date
+  status: string
+  customer: { id: string, name: string }
+  vehicle: { id: string, vehicleNumber: string }
+  hydrant: { id: string, name: string}
+  destination: { id: string, name: string }
+  vendor: { id: string, username: string }
+  jen: { username: string }
 }
 
-export function DataTable<TData, TValue>({
+interface BookingsDataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[]
+  data: TData[]
+  onApprove?: (ids: string[]) => Promise<void>
+  onDisapprove?: (ids: string[]) => Promise<void>
+  onDelete?: (ids: string[]) => void
+  selectedBookings: string[]
+  setSelectedBookings: React.Dispatch<React.SetStateAction<string[]>>
+  dateRange: DateRange | undefined
+  statusFilter: string
+}
+
+export function BookingsDataTable<TData extends Booking, TValue>({
   columns,
   data,
-  onAdd,
-  onEdit,
-  onDelete,
   onApprove,
   onDisapprove,
-}: DataTableProps<TData, TValue>) {
+  onDelete,
+  selectedBookings,
+  setSelectedBookings,
+  dateRange,
+  statusFilter,
+}: BookingsDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = 
+    React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
+  const filteredData = React.useMemo(() => {
+    return data.filter(booking => {
+      const bookingDate = new Date(booking.scheduledDateTime)
+      const isInDateRange = !dateRange || (
+        (!dateRange.from || bookingDate >= dateRange.from) &&
+        (!dateRange.to || bookingDate <= dateRange.to)
+      )
+      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter
+      return isInDateRange && matchesStatus
+    })
+  }, [data, dateRange, statusFilter])
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -76,52 +104,48 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleSelectBooking = (bookingId: string) => {
+    setSelectedBookings(prev => 
+      prev.includes(bookingId) 
+        ? prev.filter(id => id !== bookingId)
+        : [...prev, bookingId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedBookings.length === filteredData.length) {
+      setSelectedBookings([])
+    } else {
+      setSelectedBookings(filteredData.map(booking => booking.id))
+    }
+  }
+
+  const getRowClassName = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-blue-100'
+      case 'approved':
+        return 'bg-green-100'
+      case 'disapproved':
+        return 'bg-red-100'
+      default:
+        return ''
+    }
+  }
+
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter bookings..."
-          value={(table.getColumn("type")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("type")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        {onAdd && (
-          <Button onClick={onAdd} className="ml-auto">
-            Add Booking
-          </Button>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-2">
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                <TableHead>
+                  <Checkbox
+                    checked={selectedBookings.length === filteredData.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}>
@@ -134,7 +158,7 @@ export function DataTable<TData, TValue>({
                     </TableHead>
                   )
                 })}
-                {(onEdit || onDelete || onApprove || onDisapprove) && <TableHead>Actions</TableHead>}
+                {(onApprove || onDisapprove || onDelete) && <TableHead>Actions</TableHead>}
               </TableRow>
             ))}
           </TableHeader>
@@ -144,41 +168,34 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={
-                    (row.original as { status: string }).status === 'pending'
-                      ? 'bg-blue-200'
-                      : (row.original as { status: string }).status === 'approved'
-                      ? 'bg-green-100'
-                      : (row.original as { status: string }).status === 'disapproved'
-                      ? 'bg-red-100'
-                      : ''
-                  }
+                  className={getRowClassName(row.original.status)}
                 >
-                  {row.getVisibleCells().map((cell)  => (
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedBookings.includes(row.original.id)}
+                      onCheckedChange={() => handleSelectBooking(row.original.id)}
+                    />
+                  </TableCell>
+                  {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-                  {(onEdit || onDelete || onApprove || onDisapprove) && (
+                  {(onApprove || onDisapprove || onDelete) && (
                     <TableCell>
-                      {onEdit && (
-                        <Button variant="outline" className="mr-2" onClick={() => onEdit(row.original)}>
-                          Edit
-                        </Button>
-                      )}
-                      {onDelete && (
-                        <Button variant="destructive" className="mr-2" onClick={() => onDelete(row.original)}>
-                          Delete
-                        </Button>
-                      )}
-                      {onApprove && (row.original as { status: string }).status === 'pending' && (
-                        <Button variant="default" className="mr-2" onClick={() => onApprove(row.original)}>
+                      {onApprove && row.original.status === 'pending' && (
+                        <Button variant="outline" onClick={() => onApprove([row.original.id])} className="mr-2">
                           Approve
                         </Button>
                       )}
-                      {onDisapprove && (row.original as { status: string }).status === 'pending' && (
-                        <Button variant="destructive" onClick={() => onDisapprove(row.original)}>
+                      {onDisapprove && row.original.status === 'pending' && (
+                        <Button variant="destructive" onClick={() => onDisapprove([row.original.id])} className="mr-2">
                           Disapprove
+                        </Button>
+                      )}
+                      {onDelete && (
+                        <Button variant="destructive" onClick={() => onDelete([row.original.id])}>
+                          Delete
                         </Button>
                       )}
                     </TableCell>
@@ -187,7 +204,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length + (onEdit || onDelete || onApprove || onDisapprove ? 1 : 0)} className="h-24 text-center">
+                <TableCell colSpan={columns.length + 2} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -195,10 +212,9 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-between space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {selectedBookings.length} of {filteredData.length} row(s) selected.
         </div>
         <div className="space-x-2">
           <Button
