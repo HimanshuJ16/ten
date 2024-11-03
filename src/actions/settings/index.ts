@@ -69,6 +69,9 @@ export const onDeleteUser = async () => {
       where: { id: currentUser.id },
     })
 
+    const cookieStore = cookies()
+    await (await cookieStore).delete('token')
+
     console.log(`User account deleted successfully.`)
     return { status: 200, message: 'User account deleted successfully' }
   } catch (error) {
