@@ -245,21 +245,23 @@ export default function BookingsPage() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <DateRangePicker
-          dateRange={dateRange}
-          onDateRangeChange={handleDateRangeChange}
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="disapproved">Disapproved</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex space-x-2">
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="disapproved">Disapproved</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {canCreateBooking && (
           <Button onClick={() => setIsAddDialogOpen(true)}>
             Add Booking
