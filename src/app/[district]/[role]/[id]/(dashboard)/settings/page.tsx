@@ -12,11 +12,11 @@ const SettingsPage = () => {
             <ChangePassword />
           </CardContent>
         </Card>
-        <Card>
+        {/* <Card>
           <CardContent className="p-6">
             <DeleteAccount />
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )
