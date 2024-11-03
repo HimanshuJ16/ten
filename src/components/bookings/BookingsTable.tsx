@@ -262,21 +262,23 @@ export default function BookingsPage() {
             </SelectContent>
           </Select>
         </div>
-        {canCreateBooking && (
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            Add Booking
-          </Button>
-        )}
-        {canApprove && selectedBookings.length > 0 && (
-          <div className="space-x-2">
-            <Button onClick={() => selectedBookings.forEach(id => onApproveBooking(id))}>
-              Approve Selected ({selectedBookings.length})
+        <div className='flex space-x-2'>        
+          {canApprove && selectedBookings.length > 0 && (
+            <div className="space-x-2">
+              <Button onClick={() => selectedBookings.forEach(id => onApproveBooking(id))}>
+                Approve Selected ({selectedBookings.length})
+              </Button>
+              <Button variant="destructive" onClick={() => selectedBookings.forEach(id => onDisapproveBooking(id))}>
+                Disapprove Selected ({selectedBookings.length})
+              </Button>
+            </div>
+          )}
+          {canCreateBooking && (
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              Add Booking
             </Button>
-            <Button variant="destructive" onClick={() => selectedBookings.forEach(id => onDisapproveBooking(id))}>
-              Disapprove Selected ({selectedBookings.length})
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <BookingsDataTable

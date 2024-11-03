@@ -18,7 +18,7 @@ export default function SignInPage() {
               >
                 Sign In
               </Button>
-              <p>
+              {/* <p>
                 Don't have an account?{' '}
                 <Link
                   href="/auth/sign-up"
@@ -26,7 +26,7 @@ export default function SignInPage() {
                 >
                   Create one
                 </Link>
-              </p>
+              </p> */}
             </div>
           </div>
         </SignInFormProvider>
