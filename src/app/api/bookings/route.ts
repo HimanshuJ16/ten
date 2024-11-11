@@ -1,7 +1,11 @@
 import { neon } from "@neondatabase/serverless";
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { id }: { id: string }) {
+export async function GET(request: Request) {
+  // Parse the `id` query parameter from the request URL
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
   if (!id) {
     console.error("Error: Missing required fields");
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
