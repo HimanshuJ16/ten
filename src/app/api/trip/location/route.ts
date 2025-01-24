@@ -21,39 +21,53 @@ export async function POST(request: Request) {
 
     const sql = neon(process.env.DATABASE_URL!);
 
-    // Perform an upsert: Update if the record exists, otherwise insert a new record
-    const result = await sql`
-      INSERT INTO "GpsLocation" (
-        "tripId",
-        "latitude",
-        "longitude",
-        "altitude",
-        "speed",
-        "heading",
-        "timestamp"
-      ) VALUES (
-        ${id}::uuid,
-        ${latitude},
-        ${longitude},
-        ${altitude || null},
-        ${speed || null},
-        ${heading || null},
-        NOW()
-      )
-      ON CONFLICT ("tripId") 
-      DO UPDATE SET 
-        "latitude" = EXCLUDED."latitude",
-        "longitude" = EXCLUDED."longitude",
-        "altitude" = EXCLUDED."altitude",
-        "speed" = EXCLUDED."speed",
-        "heading" = EXCLUDED."heading",
-        "timestamp" = EXCLUDED."timestamp"
-      RETURNING id
+    // Step 1: Check if a record with the given tripId exists
+    const existingRecord = await sql`
+      SELECT id FROM "GpsLocation" WHERE "tripId" = ${id}::uuid
     `;
+
+    let result;
+
+    if (existingRecord.length > 0) {
+      // Step 2: If record exists, update it
+      result = await sql`
+        UPDATE "GpsLocation"
+        SET
+          "latitude" = ${latitude},
+          "longitude" = ${longitude},
+          "altitude" = ${altitude || null},
+          "speed" = ${speed || null},
+          "heading" = ${heading || null},
+          "timestamp" = NOW()
+        WHERE "tripId" = ${id}::uuid
+        RETURNING id
+      `;
+    } else {
+      // Step 3: If no record exists, insert a new one
+      result = await sql`
+        INSERT INTO "GpsLocation" (
+          "tripId",
+          "latitude",
+          "longitude",
+          "altitude",
+          "speed",
+          "heading",
+          "timestamp"
+        ) VALUES (
+          ${id}::uuid,
+          ${latitude},
+          ${longitude},
+          ${altitude || null},
+          ${speed || null},
+          ${heading || null},
+          NOW()
+        ) RETURNING id
+      `;
+    }
 
     return NextResponse.json({
       success: true,
-      message: result.length > 0 ? "GPS location updated successfully" : "GPS location created successfully",
+      message: existingRecord.length > 0 ? "GPS location updated successfully" : "GPS location created successfully",
       locationId: result[0].id,
     });
   } catch (error) {
