@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     const result = await sql`
       UPDATE "Trip"
-      SET status = 'completed', video = ${videoUrl}
+      SET status = 'delivered', video = ${videoUrl}
       WHERE id = ${tripId}::uuid
       RETURNING id
     `
