@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       LEFT JOIN "Destination" d ON b."destinationId" = d.id
       LEFT JOIN "Trip" t ON t."bookingId" = b.id
       WHERE b."vehicleId" = ${id}
-      AND b.status NOT IN ('pending', 'disapproved')
+      -- AND b.status NOT IN ('pending', 'disapproved')
       ORDER BY b."scheduledDateTime" DESC;
     `;
 

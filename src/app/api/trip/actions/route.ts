@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           NULL,
           NULL,
           NULL,
-          'in_progress',
+          'accepted',
           NULL,
           NULL,
           NOW(),
