@@ -75,13 +75,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber, otp, otpToken, timestamp, tripId } = await request.json();
+    const { phoneNumber, otp, otpToken, tripId } = await request.json();
 
-    if (!phoneNumber || !otp || !otpToken || !timestamp || !tripId) {
+    if (!phoneNumber || !otp || !otpToken || !tripId) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    const verifyResponse = await verifyOtp(phoneNumber, otp, otpToken, timestamp);
+    const verifyResponse = await verifyOtp(phoneNumber, otp, otpToken);
 
     if (!verifyResponse.success) {
       return NextResponse.json({ success: false, error: verifyResponse.error }, { status: 400 });

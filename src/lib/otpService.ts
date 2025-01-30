@@ -89,7 +89,7 @@ export const sendOtp = async (phoneNumber: string): Promise<OTPResponse> => {
     console.log("OTP API Response:", response); // Debugging log
     return {
       success: true,
-      otpToken: response.data.otpToken,
+      otpToken: response.data.verificationId,
       timestamp: response.data.timestamp,
     };
   } catch (error: any) {
@@ -108,7 +108,7 @@ export const verifyOtp = async (
   phoneNumber: string,
   otp: string,
   otpToken: string,
-  timestamp: number
+  // timestamp: number
 ): Promise<VerifyOTPResponse> => {
   try {
     const authToken = await getAuthToken();
