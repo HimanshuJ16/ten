@@ -86,6 +86,7 @@ export const sendOtp = async (phoneNumber: string): Promise<OTPResponse> => {
     };
 
     const response = await requestPromise(options);
+    console.log("OTP API Response:", response); // Debugging log
     return {
       success: true,
       otpToken: response.data.otpToken,
