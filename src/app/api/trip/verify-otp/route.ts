@@ -69,26 +69,22 @@
 //   }
 // }
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import { neon } from '@neondatabase/serverless';
 import { verifyOtp } from '@/lib/otpService';
+import { neon } from '@neondatabase/serverless';
+import { NextResponse } from "next/server";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
-  }
-
-  const { phoneNumber, otp, otpToken, timestamp, tripId } = req.body;
-
-  if (!phoneNumber || !otp || !otpToken || !timestamp || !tripId) {
-    return res.status(400).json({ success: false, error: 'Missing required fields' });
-  }
-
+export async function POST(request: Request) {
   try {
+    const { phoneNumber, otp, otpToken, timestamp, tripId } = await request.json();
+
+    if (!phoneNumber || !otp || !otpToken || !timestamp || !tripId) {
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    }
+
     const verifyResponse = await verifyOtp(phoneNumber, otp, otpToken, timestamp);
 
     if (!verifyResponse.success) {
-      return res.status(400).json({ success: false, error: verifyResponse.error });
+      return NextResponse.json({ success: false, error: verifyResponse.error }, { status: 400 });
     }
 
     // Update trip status to "completed" and set endTime
@@ -101,16 +97,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `;
 
     if (updatedTrip.length === 0) {
-      throw new Error('Failed to update trip status');
+      throw new Error("Failed to update trip status");
     }
 
-    return res.status(200).json({
-      success: true,
-      message: 'OTP verified and trip completed successfully',
-      tripId: updatedTrip[0].id,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "OTP verified and trip completed successfully",
+        tripId: updatedTrip[0].id,
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error in verify-otp API:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    console.error("Error in verify-otp API:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error", details: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
