@@ -3,7 +3,6 @@ import { randomUUID } from "crypto";
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  // Parse the `id` query parameter from the request URL
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
@@ -21,24 +20,14 @@ export async function POST(request: Request) {
 
     const sql = neon(`${process.env.DATABASE_URL}`);
 
-    if (action === "accept") {
+    if (action === "accept" || action === "reject") {
       if (!vehicleId) {
-        console.error("Error: Missing vehicleId for accept action");
-        return NextResponse.json({ error: "Missing vehicleId for accept action" }, { status: 400 });
+        console.error("Error: Missing vehicleId for action");
+        return NextResponse.json({ error: "Missing vehicleId for action" }, { status: 400 });
       }
 
       const tripId = randomUUID();
-
-      // Update booking status
-      // console.log(`Updating booking status to 'accepted' for booking ID: ${id}`);
-      // await sql`
-      //   UPDATE "Booking"
-      //   SET status = 'accepted'
-      //   WHERE id = ${id}
-      // `;
-
-      // // Log if the booking status update is successful
-      // console.log(`Booking status updated to 'accepted' for booking ID: ${id}`);
+      const tripStatus = action === "accept" ? "accepted" : "rejected";
 
       // Create new trip
       console.log(`Creating a new trip with ID: ${tripId} for vehicle ID: ${vehicleId} and booking ID: ${id}`);
@@ -61,7 +50,7 @@ export async function POST(request: Request) {
           NULL,
           NULL,
           NULL,
-          'accepted',
+          ${tripStatus},
           NULL,
           NULL,
           NOW(),
@@ -71,27 +60,12 @@ export async function POST(request: Request) {
         )
       `;
 
-      console.log(`Trip created successfully with ID: ${tripId}`);
+      console.log(`Trip created successfully with ID: ${tripId} and status: ${tripStatus}`);
 
       return NextResponse.json({
         success: true,
-        message: "Booking accepted and trip created",
+        message: `Booking ${tripStatus} and trip created`,
         tripId: tripId,
-      });
-    }
-
-    if (action === "reject") {
-      console.log(`Rejecting booking with ID: ${id}`);
-      await sql`
-        UPDATE "Booking"
-        SET status = 'rejected'
-        WHERE id = ${id}
-      `;
-      console.log(`Booking rejected with ID: ${id}`);
-
-      return NextResponse.json({
-        success: true,
-        message: "Booking rejected",
       });
     }
 

@@ -232,7 +232,7 @@ model Trip {
   startTime      DateTime?
   endTime        DateTime?
   distance       Float?
-  status         String   // e.g., "in_progress", "ongoing", "completed"
+  status         String   
   photo          String?
   video          String?
   createdAt      DateTime @default(now())
