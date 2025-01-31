@@ -1,50 +1,62 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useMemo } from 'react'
-import { BookingsDataTable, Booking } from './data-table'
-import { useBookings } from '@/hooks/bookings/use-bookings'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { format, startOfDay, endOfDay, parseISO } from 'date-fns'
-import { Calendar as CalendarIcon, Clock } from 'lucide-react'
-import { getVendors, getVendorDetails } from '@/actions/bookings'
-import { BookingSchemaType } from '@/schemas/booking.schema'
-import { getUserRole } from '@/actions/settings'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { ColumnDef } from "@tanstack/react-table"
-import { DateRange } from "react-day-picker"
-import { toast } from '@/hooks/use-toast'
-import { Loader } from '../loader'
+import { useState, useEffect, useMemo } from "react"
+import { BookingsDataTable, type Booking } from "./data-table"
+import { useBookings } from "@/hooks/bookings/use-bookings"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format, startOfDay, endOfDay } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { getVendors, getVendorDetails } from "@/actions/bookings"
+import type { BookingSchemaType } from "@/schemas/booking.schema"
+import { getUserRole } from "@/actions/settings"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
+import type { ColumnDef } from "@tanstack/react-table"
+import type { DateRange } from "react-day-picker"
+import { toast } from "@/hooks/use-toast"
+import { Loader } from "../loader"
+import { TripDetail } from "@/components/trip/trip-details"
 
 export default function BookingsPage() {
-  const { bookings, onAddBooking, onUpdateBooking, onApproveBooking, onDisapproveBooking, onDeleteBooking, loading } = useBookings()
+  const { bookings, onAddBooking, onUpdateBooking, onApproveBooking, onDisapproveBooking, loading } = useBookings()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [currentBooking, setCurrentBooking] = useState<BookingSchemaType | null>(null)
   const [formData, setFormData] = useState<BookingSchemaType>({
-    type: 'normal',
-    bookingType: 'regular',
+    type: "normal",
+    bookingType: "regular",
     scheduledDateTime: new Date(),
-    vendorId: '',
-    customerId: '',
-    vehicleId: '',
-    hydrantId: '',
-    destinationId: '',
+    vendorId: "",
+    customerId: "",
+    vehicleId: "",
+    hydrantId: "",
+    destinationId: "",
   })
   const [vendorDetails, setVendorDetails] = useState<any>(null)
-  const [userRole, setUserRole] = useState('')
+  const [userRole, setUserRole] = useState("")
   const [date, setDate] = useState<Date>()
-  const [vendors, setVendors] = useState<{ name: string; id: string; createdAt: Date; updatedAt: Date; jenId: string; username: string; district: string; circleId: string; }[]>([])
+  const [vendors, setVendors] = useState<
+    {
+      name: string
+      id: string
+      createdAt: Date
+      updatedAt: Date
+      jenId: string
+      username: string
+      district: string
+      circleId: string
+    }[]
+  >([])
   const [selectedBookings, setSelectedBookings] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(new Date()),
-    to: endOfDay(new Date())
+    to: endOfDay(new Date()),
   })
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
     setDateRange(newDateRange)
@@ -53,24 +65,24 @@ export default function BookingsPage() {
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
       const role = await getUserRole()
-      setUserRole(role || '')
-  
+      setUserRole(role || "")
+
       const vendorsResult = await getVendors()
       if (vendorsResult.status === 200) {
         setVendors(vendorsResult.data ?? [])
       }
     }
-  
+
     fetchUserRoleAndVendors()
   }, [])
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleSelectChange = (name: string) => (value: string) => {
     setFormData({ ...formData, [name]: value })
-    if (name === 'vendorId') {
+    if (name === "vendorId") {
       fetchRelatedData(value)
     }
   }
@@ -80,8 +92,8 @@ export default function BookingsPage() {
     if (result.status === 200) {
       setVendorDetails(result.data)
     } else {
-      console.error('Error fetching vendor details:', result.message)
-      toast({ title: 'Error', description: 'Failed to fetch vendor details', variant: 'destructive' })
+      console.error("Error fetching vendor details:", result.message)
+      toast({ title: "Error", description: "Failed to fetch vendor details", variant: "destructive" })
     }
   }
 
@@ -104,21 +116,20 @@ export default function BookingsPage() {
 
   const resetFormData = () => {
     setFormData({
-      type: 'normal',
-      bookingType: 'regular',
+      type: "normal",
+      bookingType: "regular",
       scheduledDateTime: new Date(),
-      vendorId: '',
-      customerId: '',
-      vehicleId: '',
-      hydrantId: '',
-      destinationId: '',
+      vendorId: "",
+      customerId: "",
+      vehicleId: "",
+      hydrantId: "",
+      destinationId: "",
     })
     setDate(undefined)
   }
 
-  const canCreateBooking = ['contractor', 'aen', 'jen'].includes(userRole)
-  const canApprove = ['aen', 'jen'].includes(userRole)
-  const canDelete = userRole === 'contractor'
+  const canCreateBooking = ["contractor", "aen", "jen"].includes(userRole)
+  const canApprove = ["aen", "jen"].includes(userRole)
 
   const columns: ColumnDef<Booking>[] = [
     {
@@ -139,29 +150,42 @@ export default function BookingsPage() {
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
           <span>{row.original.vehicle.vehicleNumber}</span>
-          {['contractor', 'aen', 'jen'].includes(userRole) && (
-            <Button variant="outline" size="sm" onClick={() => {
-              setCurrentBooking({
-                id: row.original.id,
-                type: row.original.type === 'normal' || row.original.type === 'emergency' ? row.original.type : 'normal', // default to 'normal' if type is not 'emergency'
-                bookingType: row.original.bookingType === 'regular' || row.original.bookingType === 'scheduled' ? row.original.bookingType : 'regular',
-                scheduledDateTime: new Date(row.original.scheduledDateTime),
-                vendorId: row.original.vendor.id,
-                customerId: row.original.customer.id,
-                vehicleId: row.original.vehicle.id,
-                hydrantId: row.original.hydrant.id,
-                destinationId: row.original.destination.id,
-                approved: row.original.approved,
-                status: row.original.status === 'approved' || row.original.status === 'pending' || row.original.status === 'disapproved' ? row.original.status : undefined,
-              })
-              setFormData({
-                ...formData,
-                vehicleId: row.original.vehicle.id,
-                vendorId: row.original.vendor.id,
-              })
-              fetchRelatedData(row.original.vendor.id)
-              setIsEditDialogOpen(true)
-            }}>
+          {["contractor", "aen", "jen"].includes(userRole) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentBooking({
+                  id: row.original.id,
+                  type:
+                    row.original.type === "normal" || row.original.type === "emergency" ? row.original.type : "normal", // default to 'normal' if type is not 'emergency'
+                  bookingType:
+                    row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
+                      ? row.original.bookingType
+                      : "regular",
+                  scheduledDateTime: new Date(row.original.scheduledDateTime),
+                  vendorId: row.original.vendor.id,
+                  customerId: row.original.customer.id,
+                  vehicleId: row.original.vehicle.id,
+                  hydrantId: row.original.hydrant.id,
+                  destinationId: row.original.destination.id,
+                  approved: row.original.approved,
+                  status:
+                    row.original.status === "approved" ||
+                    row.original.status === "pending" ||
+                    row.original.status === "disapproved"
+                      ? row.original.status
+                      : undefined,
+                })
+                setFormData({
+                  ...formData,
+                  vehicleId: row.original.vehicle.id,
+                  vendorId: row.original.vendor.id,
+                })
+                fetchRelatedData(row.original.vendor.id)
+                setIsEditDialogOpen(true)
+              }}
+            >
               Edit
             </Button>
           )}
@@ -178,29 +202,42 @@ export default function BookingsPage() {
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
           <span>{row.original.destination.name}</span>
-          {['contractor', 'aen', 'jen'].includes(userRole) && (
-            <Button variant="outline" size="sm" onClick={() => {
-              setCurrentBooking({
-                id: row.original.id,
-                type: row.original.type === 'normal' || row.original.type === 'emergency' ? row.original.type : 'normal', // default to 'normal' if type is not 'emergency'
-                bookingType: row.original.bookingType === 'regular' || row.original.bookingType === 'scheduled' ? row.original.bookingType : 'regular',
-                scheduledDateTime: new Date(row.original.scheduledDateTime),
-                vendorId: row.original.vendor.id,
-                customerId: row.original.customer.id,
-                vehicleId: row.original.vehicle.id,
-                hydrantId: row.original.hydrant.id,
-                destinationId: row.original.destination.id,
-                approved: row.original.approved,
-                status: row.original.status === 'approved' || row.original.status === 'pending' || row.original.status === 'disapproved' ? row.original.status : undefined,
-              })
-              setFormData({
-                ...formData,
-                destinationId: row.original.destination.id,
-                vendorId: row.original.vendor.id,
-              })
-              fetchRelatedData(row.original.vendor.id)
-              setIsEditDialogOpen(true)
-            }}>
+          {["contractor", "aen", "jen"].includes(userRole) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentBooking({
+                  id: row.original.id,
+                  type:
+                    row.original.type === "normal" || row.original.type === "emergency" ? row.original.type : "normal", // default to 'normal' if type is not 'emergency'
+                  bookingType:
+                    row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
+                      ? row.original.bookingType
+                      : "regular",
+                  scheduledDateTime: new Date(row.original.scheduledDateTime),
+                  vendorId: row.original.vendor.id,
+                  customerId: row.original.customer.id,
+                  vehicleId: row.original.vehicle.id,
+                  hydrantId: row.original.hydrant.id,
+                  destinationId: row.original.destination.id,
+                  approved: row.original.approved,
+                  status:
+                    row.original.status === "approved" ||
+                    row.original.status === "pending" ||
+                    row.original.status === "disapproved"
+                      ? row.original.status
+                      : undefined,
+                })
+                setFormData({
+                  ...formData,
+                  destinationId: row.original.destination.id,
+                  vendorId: row.original.vendor.id,
+                })
+                fetchRelatedData(row.original.vendor.id)
+                setIsEditDialogOpen(true)
+              }}
+            >
               Edit
             </Button>
           )}
@@ -224,6 +261,10 @@ export default function BookingsPage() {
       accessorKey: "status",
       header: "Status",
     },
+    {
+      id: "actions",
+      cell: ({ row }) => <Button onClick={() => openTripDetails(row.original.id)}>View Details</Button>,
+    },
   ]
 
   const sortedBookings = useMemo(() => {
@@ -242,14 +283,19 @@ export default function BookingsPage() {
     })
   }, [bookings])
 
+  const [isTripDetailOpen, setIsTripDetailOpen] = useState(false)
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
+
+  const openTripDetails = (bookingId: string) => {
+    setSelectedBookingId(bookingId)
+    setIsTripDetailOpen(true)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex space-x-2">
-          <DateRangePicker
-            dateRange={dateRange}
-            onDateRangeChange={handleDateRangeChange}
-          />
+          <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
@@ -262,22 +308,18 @@ export default function BookingsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className='flex space-x-2'>        
+        <div className="flex space-x-2">
           {canApprove && selectedBookings.length > 0 && (
             <div className="space-x-2">
-              <Button onClick={() => selectedBookings.forEach(id => onApproveBooking(id))}>
+              <Button onClick={() => selectedBookings.forEach((id) => onApproveBooking(id))}>
                 Approve Selected ({selectedBookings.length})
               </Button>
-              <Button variant="destructive" onClick={() => selectedBookings.forEach(id => onDisapproveBooking(id))}>
+              <Button variant="destructive" onClick={() => selectedBookings.forEach((id) => onDisapproveBooking(id))}>
                 Disapprove Selected ({selectedBookings.length})
               </Button>
             </div>
           )}
-          {canCreateBooking && (
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              Add Booking
-            </Button>
-          )}
+          {canCreateBooking && <Button onClick={() => setIsAddDialogOpen(true)}>Add Booking</Button>}
         </div>
       </div>
 
@@ -286,7 +328,6 @@ export default function BookingsPage() {
         data={sortedBookings as unknown as Booking[]}
         onApprove={canApprove ? (ids) => Promise.all(ids.map(onApproveBooking)).then(() => {}) : undefined}
         onDisapprove={canApprove ? (ids) => Promise.all(ids.map(onDisapproveBooking)).then(() => {}) : undefined}
-        onDelete={canDelete ? (ids) => Promise.all(ids.map(onDeleteBooking)).then(() => {}) : undefined}
         selectedBookings={selectedBookings}
         setSelectedBookings={setSelectedBookings}
         dateRange={dateRange || { from: new Date(), to: new Date() }}
@@ -299,7 +340,7 @@ export default function BookingsPage() {
             <DialogTitle>Add Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddBooking} className="space-y-4">
-            <Select name="type" value={formData.type} onValueChange={handleSelectChange('type')}>
+            <Select name="type" value={formData.type} onValueChange={handleSelectChange("type")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select booking type" />
               </SelectTrigger>
@@ -308,7 +349,7 @@ export default function BookingsPage() {
                 <SelectItem value="emergency">Emergency</SelectItem>
               </SelectContent>
             </Select>
-            <Select name="bookingType" value={formData.bookingType} onValueChange={handleSelectChange('bookingType')}>
+            <Select name="bookingType" value={formData.bookingType} onValueChange={handleSelectChange("bookingType")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select booking type" />
               </SelectTrigger>
@@ -317,15 +358,12 @@ export default function BookingsPage() {
                 <SelectItem value="scheduled">Scheduled</SelectItem>
               </SelectContent>
             </Select>
-            {formData.bookingType === 'scheduled' && (
+            {formData.bookingType === "scheduled" && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
-                    className={cn(
-                      "w-[280px] justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
+                    className={cn("w-[280px] justify-start text-left font-normal", !date && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPP") : <span>Pick a date</span>}
@@ -344,7 +382,7 @@ export default function BookingsPage() {
                 </PopoverContent>
               </Popover>
             )}
-            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange('vendorId')}>
+            <Select name="vendorId" value={formData.vendorId} onValueChange={handleSelectChange("vendorId")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
@@ -356,7 +394,7 @@ export default function BookingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select name="customerId" value={formData.customerId} onValueChange={handleSelectChange('customerId')}>
+            <Select name="customerId" value={formData.customerId} onValueChange={handleSelectChange("customerId")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select customer" />
               </SelectTrigger>
@@ -368,20 +406,19 @@ export default function BookingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select name="vehicleId" value={formData.vehicleId} onValueChange={handleSelectChange('vehicleId')}>
+            <Select name="vehicleId" value={formData.vehicleId} onValueChange={handleSelectChange("vehicleId")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vehicle" />
               </SelectTrigger>
               <SelectContent>
                 {vendorDetails?.vehicles.map((vehicle: { id: string; vehicleNumber: string }) => (
-                  
                   <SelectItem key={vehicle.id} value={vehicle.id}>
                     {vehicle.vehicleNumber}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select name="hydrantId" value={formData.hydrantId} onValueChange={handleSelectChange('hydrantId')}>
+            <Select name="hydrantId" value={formData.hydrantId} onValueChange={handleSelectChange("hydrantId")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select hydrant" />
               </SelectTrigger>
@@ -393,7 +430,11 @@ export default function BookingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select name="destinationId" value={formData.destinationId} onValueChange={handleSelectChange('destinationId')}>
+            <Select
+              name="destinationId"
+              value={formData.destinationId}
+              onValueChange={handleSelectChange("destinationId")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select destination" />
               </SelectTrigger>
@@ -418,7 +459,7 @@ export default function BookingsPage() {
             <DialogTitle>Edit Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdateBooking} className="space-y-4">
-            <Select name="vehicleId" value={formData.vehicleId} onValueChange={handleSelectChange('vehicleId')}>
+            <Select name="vehicleId" value={formData.vehicleId} onValueChange={handleSelectChange("vehicleId")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vehicle" />
               </SelectTrigger>
@@ -430,7 +471,11 @@ export default function BookingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select name="destinationId" value={formData.destinationId} onValueChange={handleSelectChange('destinationId')}>
+            <Select
+              name="destinationId"
+              value={formData.destinationId}
+              onValueChange={handleSelectChange("destinationId")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select destination" />
               </SelectTrigger>
@@ -446,6 +491,17 @@ export default function BookingsPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <Dialog open={isTripDetailOpen} onOpenChange={setIsTripDetailOpen}>
+        <DialogContent className="max-w-3xl max-h-[calc(100vh-40px)] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>Trip Details</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            <TripDetail bookingId={selectedBookingId} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+

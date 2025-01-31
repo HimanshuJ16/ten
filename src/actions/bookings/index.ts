@@ -345,3 +345,33 @@ export const getVendorDetails = async (vendorId: string) => {
     return { status: 500, message: 'Internal server error' }
   }
 }
+
+export const getTripDetails = async (bookingId: string) => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { status: 401, message: "Unauthorized" }
+
+  try {
+    const tripDetails = await client.trip.findFirst({
+      where: { bookingId },
+      include: {
+        booking: {
+          include: {
+            customer: true,
+            hydrant: true,
+            destination: true,
+            vehicle: true,
+          },
+        },
+      },
+    })
+
+    if (!tripDetails) {
+      return { status: 404, message: "Trip not found" }
+    }
+
+    return { status: 200, data: tripDetails }
+  } catch (error) {
+    console.error("Error fetching trip details:", error)
+    return { status: 500, message: "Internal server error" }
+  }
+}
