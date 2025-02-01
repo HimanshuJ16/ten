@@ -46,6 +46,12 @@ export function TripDetail({ bookingId }: TripDetailProps) {
               <TableCell>{tripDetails.booking?.destination?.name || "N/A"}</TableCell>
             </TableRow>
             <TableRow>
+              <TableCell className="font-medium">Trip Accepted By Driver</TableCell>
+              <TableCell>
+                {tripDetails.createdAt ? new Date(tripDetails.createdAt).toLocaleString() : "Not started"}
+              </TableCell>
+            </TableRow>
+            <TableRow>
               <TableCell className="font-medium">Trip Start</TableCell>
               <TableCell>
                 {tripDetails.startTime ? new Date(tripDetails.startTime).toLocaleString() : "Not started"}
