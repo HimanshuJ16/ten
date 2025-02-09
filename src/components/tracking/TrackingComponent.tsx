@@ -84,7 +84,8 @@ export default function TrackingComponent() {
   return (
     <Card className="w-full mt-[-1.5rem]">
       <CardHeader>
-        <CardTitle>Vehicle Tracking</CardTitle>
+        <CardTitle className="text-lg">Vehicle Tracking</CardTitle>
+        <CardTitle className="text-red-500 text-sm">* Note: This feature is only available for active trips</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!trackingData ? (

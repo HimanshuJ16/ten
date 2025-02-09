@@ -6,11 +6,8 @@ import { useBookings } from "@/hooks/bookings/use-bookings"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
 import { format, startOfDay, endOfDay } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { Eye, Edit, Check, X, CalendarIcon } from "lucide-react"
 import { getVendors, getVendorDetails } from "@/actions/bookings"
 import type { BookingSchemaType } from "@/schemas/booking.schema"
 import { getUserRole } from "@/actions/settings"
@@ -18,8 +15,12 @@ import { DateRangePicker } from "@/components/ui/date-range-picker"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { DateRange } from "react-day-picker"
 import { toast } from "@/hooks/use-toast"
-import { Loader } from "../loader"
 import { TripDetail } from "@/components/trip/trip-details"
+import type React from "react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { Calendar } from "../ui/calendar"
+import { Loader } from "../loader"
 
 export default function BookingsPage() {
   const { bookings, onAddBooking, onUpdateBooking, onApproveBooking, onDisapproveBooking, loading } = useBookings()
@@ -147,50 +148,6 @@ export default function BookingsPage() {
     {
       accessorKey: "vehicle.vehicleNumber",
       header: "Vehicle Number",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.original.vehicle.vehicleNumber}</span>
-          {["contractor", "aen", "jen"].includes(userRole) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCurrentBooking({
-                  id: row.original.id,
-                  type:
-                    row.original.type === "normal" || row.original.type === "emergency" ? row.original.type : "normal", // default to 'normal' if type is not 'emergency'
-                  bookingType:
-                    row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
-                      ? row.original.bookingType
-                      : "regular",
-                  scheduledDateTime: new Date(row.original.scheduledDateTime),
-                  vendorId: row.original.vendor.id,
-                  customerId: row.original.customer.id,
-                  vehicleId: row.original.vehicle.id,
-                  hydrantId: row.original.hydrant.id,
-                  destinationId: row.original.destination.id,
-                  approved: row.original.approved,
-                  status:
-                    row.original.status === "approved" ||
-                    row.original.status === "pending" ||
-                    row.original.status === "disapproved"
-                      ? row.original.status
-                      : undefined,
-                })
-                setFormData({
-                  ...formData,
-                  vehicleId: row.original.vehicle.id,
-                  vendorId: row.original.vendor.id,
-                })
-                fetchRelatedData(row.original.vendor.id)
-                setIsEditDialogOpen(true)
-              }}
-            >
-              Edit
-            </Button>
-          )}
-        </div>
-      ),
     },
     {
       accessorKey: "hydrant.name",
@@ -199,50 +156,6 @@ export default function BookingsPage() {
     {
       accessorKey: "destination.name",
       header: "Destination Name",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.original.destination.name}</span>
-          {["contractor", "aen", "jen"].includes(userRole) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCurrentBooking({
-                  id: row.original.id,
-                  type:
-                    row.original.type === "normal" || row.original.type === "emergency" ? row.original.type : "normal", // default to 'normal' if type is not 'emergency'
-                  bookingType:
-                    row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
-                      ? row.original.bookingType
-                      : "regular",
-                  scheduledDateTime: new Date(row.original.scheduledDateTime),
-                  vendorId: row.original.vendor.id,
-                  customerId: row.original.customer.id,
-                  vehicleId: row.original.vehicle.id,
-                  hydrantId: row.original.hydrant.id,
-                  destinationId: row.original.destination.id,
-                  approved: row.original.approved,
-                  status:
-                    row.original.status === "approved" ||
-                    row.original.status === "pending" ||
-                    row.original.status === "disapproved"
-                      ? row.original.status
-                      : undefined,
-                })
-                setFormData({
-                  ...formData,
-                  destinationId: row.original.destination.id,
-                  vendorId: row.original.vendor.id,
-                })
-                fetchRelatedData(row.original.vendor.id)
-                setIsEditDialogOpen(true)
-              }}
-            >
-              Edit
-            </Button>
-          )}
-        </div>
-      ),
     },
     {
       accessorKey: "scheduledDateTime",
@@ -262,8 +175,90 @@ export default function BookingsPage() {
       header: "Status",
     },
     {
+      accessorKey: "trip.status",
+      header: "Trip Status",
+      cell: ({ row }) => {
+        const trip = row.original.trip
+        return trip ? trip.status : "No Trip"
+      },
+    },
+    {
       id: "actions",
-      cell: ({ row }) => <Button onClick={() => openTripDetails(row.original.id)}>View Details</Button>,
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="w-40">
+          <Button variant="outline" size="sm" className="w-40" onClick={() => openTripDetails(row.original.id)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </Button>
+          {["contractor", "aen", "jen"].includes(userRole) &&
+            (!row.original.trip || row.original.trip.status === "rejected") && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-40"
+                onClick={() => {
+                  setCurrentBooking({
+                    id: row.original.id,
+                    type:
+                      row.original.type === "normal" || row.original.type === "emergency"
+                        ? row.original.type
+                        : "normal",
+                    bookingType:
+                      row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
+                        ? row.original.bookingType
+                        : "regular",
+                    scheduledDateTime: new Date(row.original.scheduledDateTime),
+                    vendorId: row.original.vendor.id,
+                    customerId: row.original.customer.id,
+                    vehicleId: row.original.vehicle.id,
+                    hydrantId: row.original.hydrant.id,
+                    destinationId: row.original.destination.id,
+                    approved: row.original.approved,
+                    status:
+                      row.original.status === "approved" ||
+                      row.original.status === "pending" ||
+                      row.original.status === "disapproved"
+                        ? row.original.status
+                        : undefined,
+                  })
+                  setFormData({
+                    ...formData,
+                    vehicleId: row.original.vehicle.id,
+                    vendorId: row.original.vendor.id,
+                  })
+                  fetchRelatedData(row.original.vendor.id)
+                  setIsEditDialogOpen(true)
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
+          {canApprove && row.original.status === "pending" && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-40 text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={() => onApproveBooking(row.original.id)}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-40 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => onDisapproveBooking(row.original.id)}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Disapprove
+              </Button>
+            </>
+          )}
+        </div>
+      ),
     },
   ]
 
@@ -314,9 +309,6 @@ export default function BookingsPage() {
               <Button onClick={() => selectedBookings.forEach((id) => onApproveBooking(id))}>
                 Approve Selected ({selectedBookings.length})
               </Button>
-              <Button variant="destructive" onClick={() => selectedBookings.forEach((id) => onDisapproveBooking(id))}>
-                Disapprove Selected ({selectedBookings.length})
-              </Button>
             </div>
           )}
           {canCreateBooking && <Button onClick={() => setIsAddDialogOpen(true)}>Add Booking</Button>}
@@ -326,8 +318,6 @@ export default function BookingsPage() {
       <BookingsDataTable
         columns={columns}
         data={sortedBookings as unknown as Booking[]}
-        onApprove={canApprove ? (ids) => Promise.all(ids.map(onApproveBooking)).then(() => {}) : undefined}
-        onDisapprove={canApprove ? (ids) => Promise.all(ids.map(onDisapproveBooking)).then(() => {}) : undefined}
         selectedBookings={selectedBookings}
         setSelectedBookings={setSelectedBookings}
         dateRange={dateRange || { from: new Date(), to: new Date() }}

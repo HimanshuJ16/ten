@@ -1,9 +1,10 @@
+import TripsReportPage from '@/components/reports/page'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      PAGE
+      <TripsReportPage />
     </div>
   )
 }

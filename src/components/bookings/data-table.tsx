@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import * as React from "react"
 import {
@@ -13,7 +13,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { format } from "date-fns"
 
 import {
   Table,
@@ -41,6 +40,7 @@ export interface Booking {
   destination: { id: string, name: string }
   vendor: { id: string, username: string }
   jen: { username: string }
+  trip: { id: string; status: string } | null
 }
 
 interface BookingsDataTableProps<TData, TValue> {
@@ -58,9 +58,6 @@ interface BookingsDataTableProps<TData, TValue> {
 export function BookingsDataTable<TData extends Booking, TValue>({
   columns,
   data,
-  onApprove,
-  onDisapprove,
-  onDelete,
   selectedBookings,
   setSelectedBookings,
   dateRange,
@@ -123,42 +120,39 @@ export function BookingsDataTable<TData extends Booking, TValue>({
   const getRowClassName = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-blue-100'
+        return 'bg-blue-50 hover:bg-blue-100'
       case 'approved':
-        return 'bg-green-100'
+        return 'bg-green-50 hover:bg-green-100'
       case 'disapproved':
-        return 'bg-red-100'
+        return 'bg-red-50 hover:bg-red-100'
       default:
-        return ''
+        return 'hover:bg-gray-100'
     }
   }
 
   return (
     <div className="w-full">
-      <div className="rounded-md border">
+      <div className="rounded-md border shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                <TableHead>
+              <TableRow key={headerGroup.id} className="bg-gray-100">
+                <TableHead className="w-[40px] text-center">
                   <Checkbox
                     checked={selectedBookings.length === filteredData.length}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
-                {(onApprove || onDisapprove || onDelete) && <TableHead>Actions</TableHead>}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="font-semibold text-gray-700">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -168,9 +162,9 @@ export function BookingsDataTable<TData extends Booking, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={getRowClassName(row.original.status)}
+                  className={`${getRowClassName(row.original.status)} transition-colors`}
                 >
-                  <TableCell>
+                  <TableCell className="text-center">
                     <Checkbox
                       checked={selectedBookings.includes(row.original.id)}
                       onCheckedChange={() => handleSelectBooking(row.original.id)}
@@ -181,31 +175,12 @@ export function BookingsDataTable<TData extends Booking, TValue>({
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-                  {(onApprove || onDisapprove || onDelete) && (
-                    <TableCell>
-                      {onApprove && row.original.status === 'pending' && (
-                        <Button variant="outline" onClick={() => onApprove([row.original.id])} className="mr-2">
-                          Approve
-                        </Button>
-                      )}
-                      {onDisapprove && row.original.status === 'pending' && (
-                        <Button variant="destructive" onClick={() => onDisapprove([row.original.id])} className="mr-2">
-                          Disapprove
-                        </Button>
-                      )}
-                      {onDelete && (
-                        <Button variant="destructive" onClick={() => onDelete([row.original.id])}>
-                          Delete
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length + 2} className="h-24 text-center">
-                  No results.
+                <TableCell colSpan={columns.length + 2} className="h-24 text-center text-gray-500">
+                  No results found.
                 </TableCell>
               </TableRow>
             )}
@@ -213,7 +188,7 @@ export function BookingsDataTable<TData extends Booking, TValue>({
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+        <div className="flex-1 text-sm text-gray-700">
           {selectedBookings.length} of {filteredData.length} row(s) selected.
         </div>
         <div className="space-x-2">
