@@ -20,7 +20,7 @@ const columns = [
   {
     accessorKey: "serialNumber",
     header: "S.No",
-    cell: ({ row }: { row: { index: number } }) => <span>{row.index + 1}</span>
+    cell: ({ row }: { row: { index: number } }) => <span>{row.index + 1}</span>,
   },
   {
     accessorKey: "username",
@@ -38,17 +38,17 @@ const columns = [
     accessorKey: "totalDistance",
     header: "Total Distance (km)",
   },
-];
+]
 
 export default function TripsReportPage() {
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfToday(),
     to: endOfToday(),
-  });
-  const [selectedVendor, setSelectedVendor] = useState<string>("all");
-  const { data, loading, refetch, vendors } = useTripsReport(date?.from, date?.to, selectedVendor);
+  })
+  const [selectedVendor, setSelectedVendor] = useState<string>("all")
+  const { data, loading, refetch, vendors } = useTripsReport(date?.from, date?.to, selectedVendor)
   const [userRole, setUserRole] = useState("")
-  
+
   useEffect(() => {
     const fetchUserRoleAndVendors = async () => {
       const role = await getUserRole()
@@ -62,30 +62,30 @@ export default function TripsReportPage() {
     if (!data) return;
     const headers = columns.map((col) => col.header).join("\t");
     const rows = data
-      .map((row) => columns.map((col) => row[col.accessorKey as keyof TripReportData]).join("\t"))
+      .map((row, index) => `${index + 1}\t${columns.slice(1).map((col) => row[col.accessorKey as keyof TripReportData]).join("\t")}`)
       .join("\n");
-    navigator.clipboard.writeText(`${headers}\n${rows}`);
+    navigator.clipboard.writeText(`S.No\t${headers}\n${rows}`);
   };
-
+  
   const handleDownloadCSV = () => {
     if (!data) return;
     const headers = columns.map((col) => col.header).join(",");
     const rows = data
-      .map((row) => columns.map((col) => row[col.accessorKey as keyof TripReportData]).join(","))
+      .map((row, index) => `${index + 1},${columns.slice(1).map((col) => row[col.accessorKey as keyof TripReportData]).join(",")}`)
       .join("\n");
-    const blob = new Blob([`${headers}\n${rows}`], { type: "text/csv" });
+    const blob = new Blob([`S.No,${headers}\n${rows}`], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "trips_report.csv";
     a.click();
   };
-
+  
   const handleDownloadExcel = () => {
     if (!data) return;
-    const exportData = data.map((row) => {
-      const newRow: Record<string, any> = {};
-      columns.forEach((col) => {
+    const exportData = data.map((row, index) => {
+      const newRow: Record<string, any> = { "S.No": index + 1 };
+      columns.slice(1).forEach((col) => {
         newRow[col.header] = row[col.accessorKey as keyof TripReportData];
       });
       return newRow;
@@ -95,14 +95,15 @@ export default function TripsReportPage() {
     XLSX.utils.book_append_sheet(wb, ws, "Trips Report");
     XLSX.writeFile(wb, "trips_report.xlsx");
   };
-
+  
   const handleDownloadPDF = () => {
     if (!data) return;
     const doc = new jsPDF();
-    const tableData: RowInput[] = data.map((row) =>
-      columns.map((col) => String(row[col.accessorKey as keyof TripReportData])),
-    );
-
+    const tableData: RowInput[] = data.map((row, index) => [
+      index + 1,
+      ...columns.slice(1).map((col) => String(row[col.accessorKey as keyof TripReportData])),
+    ]);
+  
     doc.setFontSize(16);
     doc.text("Revenue Report", 14, 15);
     doc.setFontSize(10);
@@ -111,7 +112,7 @@ export default function TripsReportPage() {
       14,
       25,
     );
-
+  
     autoTable(doc, {
       head: [columns.map((col) => col.header)],
       body: tableData,
@@ -121,7 +122,7 @@ export default function TripsReportPage() {
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       alternateRowStyles: { fillColor: [224, 224, 224] },
     });
-
+  
     if (data.length > 0) {
       const totals = data.reduce(
         (acc, row) => ({
@@ -130,14 +131,14 @@ export default function TripsReportPage() {
         }),
         { totalTrips: 0, totalDistance: 0 },
       );
-
+  
       autoTable(doc, {
         body: [["Total:", totals.totalTrips.toString(), totals.totalDistance.toFixed(2)]],
         styles: { fontSize: 8, cellPadding: 1, fontStyle: "bold" },
         theme: "grid",
       });
     }
-
+  
     doc.save("trips_report.pdf");
   };
 
@@ -220,15 +221,15 @@ export default function TripsReportPage() {
           </Button>
         </div>
       </div>
-  
+
       {loading ? (
         <div className="text-center py-10">Loading...</div>
-      ) : data && data.length > 0 ? ( // Check if data is available
+      ) : data ? (
         <DataTable columns={columns} data={data} onAdd={() => {}} onEdit={() => {}} onDelete={() => {}} />
       ) : (
-        <div className="text-center py-10">No data available for the selected vendor. Please try a different selection.</div>
+        <div className="text-center py-10">No data available. Please generate a report.</div>
       )}
     </div>
-  );
+  )
 }
 

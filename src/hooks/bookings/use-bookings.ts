@@ -16,6 +16,7 @@ export const useBookings = () => {
     setLoading(true)
     try {
       const fetchedBookings = await getBookings()
+      console.log('Fetched bookings:', fetchedBookings)
       if (fetchedBookings) {
         setBookings(fetchedBookings)
       } else {

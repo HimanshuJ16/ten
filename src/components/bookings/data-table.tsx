@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DateRange } from "react-day-picker"
 
 export interface Booking {
+  trip: any;
   approved: boolean | undefined
   id: string
   type: string
@@ -40,7 +41,6 @@ export interface Booking {
   destination: { id: string, name: string }
   vendor: { id: string, username: string }
   jen: { username: string }
-  trip: { id: string; status: string } | null
 }
 
 interface BookingsDataTableProps<TData, TValue> {

@@ -48,12 +48,7 @@ export const getBookings = async () => {
       vehicle: true,
       hydrant: true,
       destination: true,
-      trip: {
-        select: {
-          id: true,
-          status: true,
-        },
-      },
+      trip: true,
     }
 
     switch (currentUser.role) {

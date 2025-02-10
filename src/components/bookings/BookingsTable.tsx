@@ -175,24 +175,31 @@ export default function BookingsPage() {
       header: "Status",
     },
     {
-      accessorKey: "trip.status",
+      accessorKey: "trip",
       header: "Trip Status",
       cell: ({ row }) => {
-        const trip = row.original.trip
-        return trip ? trip.status : "No Trip"
+        const trip = row.original.trip; // Get the trip array
+        if (trip && trip.length > 0) {
+          return trip[0].status; // Return the status of the first trip
+        }
+        return "trip not started"; // Return a default value if no trip exists
       },
     },
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <div className="w-40">
-          <Button variant="outline" size="sm" className="w-40" onClick={() => openTripDetails(row.original.id)}>
-            <Eye className="mr-2 h-4 w-4" />
-            View Details
-          </Button>
-          {["contractor", "aen", "jen"].includes(userRole) &&
-            (!row.original.trip || row.original.trip.status === "rejected") && (
+      cell: ({ row }) => {
+        const trip = row.original.trip; // Get the trip array
+        const tripStatus = trip && trip.length > 0 ? trip[0].status : null; // Get trip status
+        const canEdit = !trip || tripStatus === "rejected"; // Check if edit is allowed
+  
+        return (
+          <div className="w-40">
+            <Button variant="outline" size="sm" className="w-40" onClick={() => openTripDetails(row.original.id)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </Button>
+            {canEdit && (
               <Button
                 variant="outline"
                 size="sm"
@@ -226,41 +233,42 @@ export default function BookingsPage() {
                     ...formData,
                     vehicleId: row.original.vehicle.id,
                     vendorId: row.original.vendor.id,
-                  })
-                  fetchRelatedData(row.original.vendor.id)
-                  setIsEditDialogOpen(true)
+                  });
+                  fetchRelatedData(row.original.vendor.id);
+                  setIsEditDialogOpen(true);
                 }}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Button>
             )}
-          {canApprove && row.original.status === "pending" && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-40 text-green-600 hover:text-green-700 hover:bg-green-50"
-                onClick={() => onApproveBooking(row.original.id)}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Approve
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-40 text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => onDisapproveBooking(row.original.id)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Disapprove
-              </Button>
-            </>
-          )}
-        </div>
-      ),
+            {canApprove && row.original.status === "pending" && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-40 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  onClick={() => onApproveBooking(row.original.id)}
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-40 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => onDisapproveBooking(row.original.id)}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Disapprove
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
     },
-  ]
+  ];
 
   const sortedBookings = useMemo(() => {
     return [...bookings].sort((a, b) => {

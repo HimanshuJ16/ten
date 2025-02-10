@@ -119,12 +119,14 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
 
     switch (currentUser.role) {
       case "aen":
-        // Get trips for all vendors under all JENs managed by the AEN
         trips = await prisma.trip.findMany({
           where: {
             startTime: {
               gte: startDate,
               lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
             },
             vehicle: {
               vendor: {
@@ -142,18 +144,21 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
                 vendor: true,
               },
             },
+            booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
         });
         break;
 
       case "jen":
-        // Get trips for all vendors under the JEN
         trips = await prisma.trip.findMany({
           where: {
             startTime: {
               gte: startDate,
               lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
             },
             vehicle: {
               vendor: {
@@ -169,18 +174,21 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
                 vendor: true,
               },
             },
+            booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
         });
         break;
 
       case "vendor":
-        // Get trips for all vehicles under the vendor
         trips = await prisma.trip.findMany({
           where: {
             startTime: {
               gte: startDate,
               lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
             },
             vehicle: {
               vendor: {
@@ -194,18 +202,21 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
                 vendor: true,
               },
             },
+            booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
         });
         break;
 
       default:
-        // For other roles, return all trips (or handle accordingly)
         trips = await prisma.trip.findMany({
           where: {
             startTime: {
               gte: startDate,
               lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
             },
           },
           include: {
@@ -214,6 +225,7 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
                 vendor: true,
               },
             },
+            booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
         });
