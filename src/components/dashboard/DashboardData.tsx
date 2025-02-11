@@ -33,7 +33,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 mt-[-1.5rem]">
       <div className="mb-6 flex justify-between items-center">
         <Popover>
           <PopoverTrigger asChild>
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <Loader loading={true} children={undefined} />
+        <Loader loading={loading}>Loading...</Loader>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
