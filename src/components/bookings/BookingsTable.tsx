@@ -191,7 +191,7 @@ export default function BookingsPage() {
       cell: ({ row }) => {
         const trip = row.original.trip; // Get the trip array
         const tripStatus = trip && trip.length > 0 ? trip[0].status : null; // Get trip status
-        const canEdit = !trip || tripStatus === "rejected"; // Check if edit is allowed
+        const canEdit = !trip[0] || tripStatus === "rejected"; // Check if edit is allowed
   
         return (
           <div className="w-40">
@@ -242,7 +242,7 @@ export default function BookingsPage() {
                 Edit
               </Button>
             )}
-            {canApprove && row.original.status === "pending" && (
+            {canApprove && row.original.status === "pending" && tripStatus === "completed" && (
               <>
                 <Button
                   variant="outline"
