@@ -130,7 +130,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <Card className="mb-8">
+          {/* <Card className="mb-8">
             <CardHeader>
               <CardTitle>Daily Trip Statistics</CardTitle>
             </CardHeader>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </>
       )}
     </div>
