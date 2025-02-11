@@ -8,7 +8,7 @@ import SignUpFormProvider from "@/components/forms/sign-up/form-provider";
 import RegistrationFormStep from "@/components/forms/sign-up/registration-step";
 import ButtonHandler from "@/components/forms/sign-up/button-handlers";
 
-const SIGNUP_ACCESS_PASSWORD = process.env.NEXT_PUBLIC_SIGNUP_ACCESS_PASSWORD; // Change this
+const SIGNUP_ACCESS_PASSWORD = process.env.NEXT_PUBLIC_SIGNUP_ACCESS_PASSWORD || ""; // Change this
 
 export default function SignUp() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
