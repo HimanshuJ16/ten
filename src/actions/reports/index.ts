@@ -43,6 +43,50 @@ export const getVendors = async () => {
     let vendors: { id: string; username: string }[];
 
     switch (currentUser.role) {
+      case "se":
+        vendors = await prisma.vendor.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  se: {
+                    username: currentUser.username,
+                  },
+                },
+              },
+            },
+          },
+          select: {
+            id: true,
+            username: true,
+          },
+          orderBy: {
+            username: "asc",
+          },
+        });
+        break;
+
+      case "xen":
+        vendors = await prisma.vendor.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  username: currentUser.username,
+                }
+              },
+            },
+          },
+          select: {
+            id: true,
+            username: true,
+          },
+          orderBy: {
+            username: "asc",
+          },
+        });
+        break;
+
       case "aen":
         // Get all vendors under all JENs managed by the AEN
         vendors = await prisma.vendor.findMany({
