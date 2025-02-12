@@ -44,11 +44,11 @@ async function getCurrentUser() {
 }
 
 export const getCustomers = async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) return null
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return null;
 
   try {
-    let customers
+    let customers;
 
     switch (currentUser.role) {
       case 'contractor':
@@ -67,43 +67,97 @@ export const getCustomers = async () => {
         })
         break
 
+      case 'se':
+        customers = await client.customer.findMany({
+          where: {
+            vendor: {
+              jen: {
+                aen: {
+                  xen: {
+                    se: { username: currentUser.username },
+                  },
+                },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: { include: { se: true } } } } } },
+          },
+        });
+        break;
+
+      case 'xen':
+        customers = await client.customer.findMany({
+          where: {
+            vendor: {
+              jen: {
+                aen: {
+                  xen: { username: currentUser.username },
+                },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: true } } } },
+          },
+        });
+        break;
+
+      case 'aen':
+        customers = await client.customer.findMany({
+          where: {
+            vendor: {
+              jen: {
+                aen: { username: currentUser.username },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: true } },
+          },
+        });
+        break;
+
       case 'jen':
         customers = await client.customer.findMany({
           where: {
             OR: [
               { jen: { username: currentUser.username } },
-              { vendor: { jen: { username: currentUser.username } } }
-            ]
+              { vendor: { jen: { username: currentUser.username } } },
+            ],
           },
           include: {
             vendor: true,
-            jen: true
-          }
-        })
-        break
+            jen: true,
+          },
+        });
+        break;
 
       case 'vendor':
         customers = await client.customer.findMany({
           where: {
-            vendor: { username: currentUser.username }
+            vendor: { username: currentUser.username },
           },
           include: {
             vendor: true,
-            jen: true
-          }
-        })
-        break
+            jen: true,
+          },
+        });
+        break;
 
       default:
-        throw new Error('Unauthorized to view customers')
+        throw new Error('Unauthorized to view customers');
     }
 
-    return customers
+    return customers;
   } catch (error) {
-    console.error('Error fetching customers:', error)
-    return null
+    console.error('Error fetching customers:', error);
+    return null;
   }
-}
+};
 
 export const addCustomer = async (data: CustomerData) => {
   const currentUser = await getCurrentUser()
@@ -290,13 +344,13 @@ export const deleteCustomer = async (id: string) => {
 }
 
 export const getVendors = async () => {
-  const currentUser = await getCurrentUser()
+  const currentUser = await getCurrentUser();
   if (!currentUser) {
-    return { status: 401, message: 'Unauthorized' }
+    return { status: 401, message: 'Unauthorized' };
   }
 
   try {
-    let vendors
+    let vendors;
 
     switch (currentUser.role) {
       case 'contractor':
@@ -316,30 +370,77 @@ export const getVendors = async () => {
         }))
         break
 
+      case 'se':
+        vendors = await client.vendor.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  se: { username: currentUser.username },
+                },
+              },
+            },
+          },
+          include: {
+            jen: { include: { aen: { include: { xen: { include: { se: true } } } } } },
+          },
+        });
+        break;
+
+      case 'xen':
+        vendors = await client.vendor.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: { username: currentUser.username },
+              },
+            },
+          },
+          include: {
+            jen: { include: { aen: { include: { xen: true } } } },
+          },
+        });
+        break;
+
+      case 'aen':
+        vendors = await client.vendor.findMany({
+          where: {
+            jen: {
+              aen: { username: currentUser.username },
+            },
+          },
+          include: {
+            jen: { include: { aen: true } },
+          },
+        });
+        break;
+
       case 'jen':
-        const jen = await client.jen.findUnique({
-          where: { username: currentUser.username },
-          include: { vendors: true },
-        })
+        vendors = await client.vendor.findMany({
+          where: {
+            jen: { username: currentUser.username },
+          },
+          include: {
+            jen: true,
+          },
+        });
+        break;
 
-        if (!jen) {
-          throw new Error('JEN not found')
-        }
-
-        vendors = jen.vendors.map(vendor => ({
-          id: vendor.id,
-          name: vendor.name,
-          username: vendor.username
-        }))
-        break
-
+      case 'vendor':
+        vendors = await client.vendor.findMany({
+          where: {
+            username: currentUser.username, // Only fetch the current vendor's details
+          },
+        });
+        break;
+        
       default:
-        throw new Error('Unauthorized to fetch vendors')
+        throw new Error('Unauthorized to fetch vendors');
     }
 
-    return { status: 200, data: vendors }
+    return { status: 200, data: vendors };
   } catch (error) {
-    console.error('Error fetching vendors:', error)
-    return { status: 500, message: 'Internal server error' }
+    console.error('Error fetching vendors:', error);
+    return { status: 500, message: 'Internal server error' };
   }
-}
+};
