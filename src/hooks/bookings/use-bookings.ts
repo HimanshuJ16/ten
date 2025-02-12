@@ -3,7 +3,7 @@ import { useToast } from '@/hooks/use-toast'
 import { getBookings, addBooking, updateBooking, deleteBooking, approveBooking, disapproveBooking } from '@/actions/bookings'
 import { Booking, Vendor } from '@prisma/client'
 import { BookingSchemaType } from '@/schemas/booking.schema'
-import { getVendorDetails } from '@/actions/bookings'; // Import getVendorDetails
+import { getVendorDetails } from '@/actions/vendors'; // Import getVendorDetails
 
 
 export const useBookings = () => {

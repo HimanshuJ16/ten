@@ -68,6 +68,54 @@ export const getHydrants = async () => {
         })
         break
 
+      case 'se':
+        hydrants = await prisma.hydrant.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  se: { username: currentUser.username },
+                },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: { include: { se: true } } } } } },
+          },
+        });
+        break;
+
+      case 'xen':
+        hydrants = await prisma.hydrant.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: { username: currentUser.username },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: true } } } },
+          },
+        });
+        break;
+
+      case 'aen':
+        hydrants = await prisma.hydrant.findMany({
+          where: {
+            jen: {
+              aen: { username: currentUser.username },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: true } },
+          },
+        });
+        break;    
+
       case 'jen':
         hydrants = await prisma.hydrant.findMany({
           where: {
@@ -242,61 +290,6 @@ export const deleteHydrant = async (id: string) => {
     }
   } catch (error) {
     console.error('Error deleting hydrant:', error)
-    return { status: 500, message: 'Internal server error' }
-  }
-}
-
-export const getVendors = async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return { status: 401, message: 'Unauthorized' }
-  }
-
-  try {
-    let vendors
-
-    switch (currentUser.role) {
-      case 'contractor':
-        const contractor = await prisma.contractor.findUnique({
-          where: { username: currentUser.username },
-          include: { circle: { include: { vendors: true } } },
-        })
-
-        if (!contractor) {
-          throw new Error('Contractor not found')
-        }
-
-        vendors = contractor.circle.vendors.map(vendor => ({
-          id: vendor.id,
-          name: vendor.name,
-          username: vendor.username
-        }))
-        break
-
-      case 'jen':
-        const jen = await prisma.jen.findUnique({
-          where: { username: currentUser.username },
-          include: { vendors: true },
-        })
-
-        if (!jen) {
-          throw new Error('JEN not found')
-        }
-
-        vendors = jen.vendors.map(vendor => ({
-          id: vendor.id,
-          name: vendor.name,
-          username: vendor.username
-        }))
-        break
-
-      default:
-        throw new Error('Unauthorized to fetch vendors')
-    }
-
-    return { status: 200, data: vendors }
-  } catch (error) {
-    console.error('Error fetching vendors:', error)
     return { status: 500, message: 'Internal server error' }
   }
 }

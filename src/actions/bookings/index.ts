@@ -65,6 +65,34 @@ export const getBookings = async () => {
         })
         break
 
+      case 'se':
+        bookings = await client.booking.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  se: { username: currentUser.username },
+                },
+              },
+            },
+          },
+          include: includeRelations,
+        });
+        break;
+
+      case 'xen':
+        bookings = await client.booking.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: { username: currentUser.username },
+              },
+            },
+          },
+          include: includeRelations,
+        });
+        break;    
+
       case 'aen':
         bookings = await client.booking.findMany({
           where: {
@@ -267,82 +295,6 @@ export const disapproveBooking = async (id: string) => {
     return { status: 200, message: 'Booking disapproved successfully', data: updatedBooking }
   } catch (error) {
     console.error('Error disapproving booking:', error)
-    return { status: 500, message: 'Internal server error' }
-  }
-}
-
-export const getVendors = async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return { status: 401, message: 'Unauthorized' }
-  }
-
-  try {
-    let vendors
-
-    switch (currentUser.role) {
-      case 'contractor':
-        vendors = await client.vendor.findMany({
-          where: {
-            jen: {
-              contractor: {
-                username: currentUser.username
-              }
-            }
-          }
-        })
-        break
-
-      case 'aen':
-        vendors = await client.vendor.findMany({
-          where: {
-            jen: {
-              aen: {
-                username: currentUser.username
-              }
-            }
-          }
-        })
-        break
-
-      case 'jen':
-        vendors = await client.vendor.findMany({
-          where: {
-            jen: { username: currentUser.username }
-          }
-        })
-        break
-
-      default:
-        throw new Error('Unauthorized to fetch vendors')
-    }
-
-    return { status: 200, data: vendors }
-  } catch (error) {
-    console.error('Error fetching vendors:', error)
-    return { status: 500, message: 'Internal server error' }
-  }
-}
-
-export const getVendorDetails = async (vendorId: string) => {
-  try {
-    const vendorDetails = await client.vendor.findUnique({
-      where: { id: vendorId },
-      include: {
-        customers: true,
-        vehicles: true,
-        hydrants: true,
-        destinations: true,
-      },
-    })
-
-    if (!vendorDetails) {
-      throw new Error('Vendor not found')
-    }
-
-    return { status: 200, data: vendorDetails }
-  } catch (error) {
-    console.error('Error fetching vendor details:', error)
     return { status: 500, message: 'Internal server error' }
   }
 }

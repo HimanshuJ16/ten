@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format, startOfDay, endOfDay } from "date-fns"
 import { Eye, Edit, Check, X, CalendarIcon } from "lucide-react"
-import { getVendors, getVendorDetails } from "@/actions/bookings"
+import { getVendors, getVendorDetails } from "@/actions/vendors"
 import type { BookingSchemaType } from "@/schemas/booking.schema"
 import { getUserRole } from "@/actions/settings"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
@@ -40,18 +40,7 @@ export default function BookingsPage() {
   const [vendorDetails, setVendorDetails] = useState<any>(null)
   const [userRole, setUserRole] = useState("")
   const [date, setDate] = useState<Date>()
-  const [vendors, setVendors] = useState<
-    {
-      name: string
-      id: string
-      createdAt: Date
-      updatedAt: Date
-      jenId: string
-      username: string
-      district: string
-      circleId: string
-    }[]
-  >([])
+  const [vendors, setVendors] = useState<{ id: string; name: string; username: string }[]>([])
   const [selectedBookings, setSelectedBookings] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(new Date()),
@@ -178,21 +167,21 @@ export default function BookingsPage() {
       accessorKey: "trip",
       header: "Trip Status",
       cell: ({ row }) => {
-        const trip = row.original.trip; // Get the trip array
+        const trip = row.original.trip // Get the trip array
         if (trip && trip.length > 0) {
-          return trip[0].status; // Return the status of the first trip
+          return trip[0].status // Return the status of the first trip
         }
-        return "trip not started"; // Return a default value if no trip exists
+        return "trip not started" // Return a default value if no trip exists
       },
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
-        const trip = row.original.trip; // Get the trip array
-        const tripStatus = trip && trip.length > 0 ? trip[0].status : null; // Get trip status
-        const canEdit = !trip[0] || tripStatus === "rejected"; // Check if edit is allowed
-  
+        const trip = row.original.trip // Get the trip array
+        const tripStatus = trip && trip.length > 0 ? trip[0].status : null // Get trip status
+        const canEdit = !trip[0] || tripStatus === "rejected" // Check if edit is allowed
+
         return (
           <div className="w-40">
             <Button variant="outline" size="sm" className="w-40" onClick={() => openTripDetails(row.original.id)}>
@@ -233,9 +222,9 @@ export default function BookingsPage() {
                     ...formData,
                     vehicleId: row.original.vehicle.id,
                     vendorId: row.original.vendor.id,
-                  });
-                  fetchRelatedData(row.original.vendor.id);
-                  setIsEditDialogOpen(true);
+                  })
+                  fetchRelatedData(row.original.vendor.id)
+                  setIsEditDialogOpen(true)
                 }}
               >
                 <Edit className="mr-2 h-4 w-4" />
@@ -265,10 +254,10 @@ export default function BookingsPage() {
               </>
             )}
           </div>
-        );
+        )
       },
     },
-  ];
+  ]
 
   const sortedBookings = useMemo(() => {
     return [...bookings].sort((a, b) => {

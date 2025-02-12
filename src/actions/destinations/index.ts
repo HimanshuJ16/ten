@@ -50,9 +50,7 @@ export const getDestinations = async () => {
   if (!currentUser) return null
 
   try {
-    let destinations
-
-    
+    let destinations  
 
     switch (currentUser.role) {
       case 'contractor':
@@ -70,6 +68,54 @@ export const getDestinations = async () => {
           }
         })
         break
+
+      case 'se':
+        destinations = await prisma.destination.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: {
+                  se: { username: currentUser.username },
+                },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: { include: { se: true } } } } } },
+          },
+        });
+        break;
+
+      case 'xen':
+        destinations = await prisma.destination.findMany({
+          where: {
+            jen: {
+              aen: {
+                xen: { username: currentUser.username },
+              },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: { include: { xen: true } } } },
+          },
+        });
+        break;
+
+      case 'aen':
+        destinations = await prisma.destination.findMany({
+          where: {
+            jen: {
+              aen: { username: currentUser.username },
+            },
+          },
+          include: {
+            vendor: true,
+            jen: { include: { aen: true } },
+          },
+        });
+        break;  
 
       case 'jen':
         destinations = await prisma.destination.findMany({
@@ -251,57 +297,57 @@ export const deleteDestination = async (id: string) => {
   }
 }
 
-export const getVendors = async () => {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    return { status: 401, message: 'Unauthorized' }
-  }
+// export const getVendors = async () => {
+//   const currentUser = await getCurrentUser()
+//   if (!currentUser) {
+//     return { status: 401, message: 'Unauthorized' }
+//   }
 
-  try {
-    let vendors
+//   try {
+//     let vendors
 
-    switch (currentUser.role) {
-      case 'contractor':
-        const contractor = await prisma.contractor.findUnique({
-          where: { username: currentUser.username },
-          include: { circle: { include: { vendors: true } } },
-        })
+//     switch (currentUser.role) {
+//       case 'contractor':
+//         const contractor = await prisma.contractor.findUnique({
+//           where: { username: currentUser.username },
+//           include: { circle: { include: { vendors: true } } },
+//         })
 
-        if (!contractor) {
-          throw new Error('Contractor not found')
-        }
+//         if (!contractor) {
+//           throw new Error('Contractor not found')
+//         }
 
-        vendors = contractor.circle.vendors.map(vendor => ({
-          id: vendor.id,
-          name: vendor.name,
-          username: vendor.username
-        }))
-        break
+//         vendors = contractor.circle.vendors.map(vendor => ({
+//           id: vendor.id,
+//           name: vendor.name,
+//           username: vendor.username
+//         }))
+//         break
 
-      case 'jen':
-        const jen = await prisma.jen.findUnique({
-          where: { username: currentUser.username },
-          include: { vendors: true },
-        })
+//       case 'jen':
+//         const jen = await prisma.jen.findUnique({
+//           where: { username: currentUser.username },
+//           include: { vendors: true },
+//         })
 
-        if (!jen) {
-          throw new Error('JEN not found')
-        }
+//         if (!jen) {
+//           throw new Error('JEN not found')
+//         }
 
-        vendors = jen.vendors.map(vendor => ({
-          id: vendor.id,
-          name: vendor.name,
-          username: vendor.username
-        }))
-        break
+//         vendors = jen.vendors.map(vendor => ({
+//           id: vendor.id,
+//           name: vendor.name,
+//           username: vendor.username
+//         }))
+//         break
 
-      default:
-        throw new Error('Unauthorized to fetch vendors')
-    }
+//       default:
+//         throw new Error('Unauthorized to fetch vendors')
+//     }
 
-    return { status: 200, data: vendors }
-  } catch (error) {
-    console.error('Error fetching vendors:', error)
-    return { status: 500, message: 'Internal server error' }
-  }
-}
+//     return { status: 200, data: vendors }
+//   } catch (error) {
+//     console.error('Error fetching vendors:', error)
+//     return { status: 500, message: 'Internal server error' }
+//   }
+// }
