@@ -109,7 +109,7 @@ export function useSignUpForm(contractorId?: string) {
   const onHandleSubmit = methods.handleSubmit(
     async (values: UserRegistrationProps) => {
       try {
-        setLoading(true)
+        setLoading(true);
         
         const registered = await onCompleteUserRegistration(
           values.fullname,
@@ -121,30 +121,38 @@ export function useSignUpForm(contractorId?: string) {
           values.role,
           values.parentId,
           contractorId
-        )
-
+        );
+  
         if (registered?.status !== 200 || !registered.user) {
-          throw new Error(`User registration failed. Status: ${registered?.status}`)
+          throw new Error(`User registration failed. Status: ${registered?.status}`);
         }
-
-        setLoading(false)
+  
+        // Show success toast
+        toast({
+          title: 'Success',
+          description: 'User successfully created!',
+          variant: "default", // or 'success' if your toast supports it
+        });
+  
+        setLoading(false);
+  
         if (contractorId) {
-          router.push(`/${values.district}/contractor/${contractorId}/dashboard`)
+          router.push(`/${values.district}/contractor/${contractorId}/dashboard`);
         } else {
-          router.push(`/${values.district}/${values.role}/${registered.user.id}/dashboard`)
+          router.push(`/${values.district}/${values.role}/${registered.user.id}/dashboard`);
         }
       } catch (error) {
-        setLoading(false)
-        console.error('Registration error:', error)
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+        setLoading(false);
+        console.error('Registration error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
           title: 'Error',
           description: errorMessage,
           variant: 'destructive',
-        })
+        });
       }
     }
-  )
+  );
 
   return {
     methods,

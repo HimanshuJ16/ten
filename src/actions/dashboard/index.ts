@@ -34,42 +34,86 @@ async function getCurrentUser() {
 
 export const getDashboardData = async (startDate?: Date, endDate?: Date) => {
   try {
-    const currentUser = await getCurrentUser()
-    if (!currentUser) return { status: 401, message: "Unauthorized" }
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { status: 401, message: "Unauthorized" };
 
-    const start = startDate ? startOfDay(startDate) : startOfDay(new Date())
-    const end = endDate ? endOfDay(endDate) : endOfDay(new Date())
+    const start = startDate ? startOfDay(startDate) : startOfDay(new Date());
+    const end = endDate ? endOfDay(endDate) : endOfDay(new Date());
 
-    let whereClause = {}
-    let bookingWhereClause = {}
-    let vehicleWhereClause = {}
+    let whereClause = {};
+    let bookingWhereClause = {};
+    let vehicleWhereClause = {};
 
     switch (currentUser.role) {
-      case "contractor":
+      case "se":
         whereClause = {
           booking: {
             jen: {
-              contractor: {
+              aen: {
+                xen: {
+                  se: {
+                    username: currentUser.username,
+                  },
+                },
+              },
+            },
+          },
+        };
+        bookingWhereClause = {
+          jen: {
+            aen: {
+              xen: {
+                se: {
+                  username: currentUser.username,
+                },
+              },
+            },
+          },
+        };
+        vehicleWhereClause = {
+          jen: {
+            aen: {
+              xen: {
+                se: {
+                  username: currentUser.username,
+                },
+              },
+            },
+          },
+        };
+        break;
+
+      case "xen":
+        whereClause = {
+          booking: {
+            jen: {
+              aen: {
+                xen: {
+                  username: currentUser.username,
+                },
+              },
+            },
+          },
+        };
+        bookingWhereClause = {
+          jen: {
+            aen: {
+              xen: {
                 username: currentUser.username,
               },
             },
           },
-        }
-        bookingWhereClause = {
-          jen: {
-            contractor: {
-              username: currentUser.username,
-            },
-          },
-        }
+        };
         vehicleWhereClause = {
           jen: {
-            contractor: {
-              username: currentUser.username,
+            aen: {
+              xen: {
+                username: currentUser.username,
+              },
             },
           },
-        }
-        break
+        };
+        break;
 
       case "aen":
         whereClause = {
@@ -80,57 +124,79 @@ export const getDashboardData = async (startDate?: Date, endDate?: Date) => {
               },
             },
           },
-        }
+        };
         bookingWhereClause = {
           jen: {
             aen: {
               username: currentUser.username,
             },
           },
-        }
+        };
         vehicleWhereClause = {
           jen: {
             aen: {
               username: currentUser.username,
             },
           },
-        }
-        break
+        };
+        break;
 
       case "jen":
         whereClause = {
           booking: {
             jen: { username: currentUser.username },
           },
-        }
+        };
         bookingWhereClause = {
           jen: { username: currentUser.username },
-        }
+        };
         vehicleWhereClause = {
           jen: { username: currentUser.username },
-        }
-        break
+        };
+        break;
+
+      case "contractor":
+        whereClause = {
+          booking: {
+            jen: {
+              contractor: {
+                username: currentUser.username,
+              },
+            },
+          },
+        };
+        bookingWhereClause = {
+          jen: {
+            contractor: {
+              username: currentUser.username,
+            },
+          },
+        };
+        vehicleWhereClause = {
+          jen: {
+            contractor: {
+              username: currentUser.username,
+            },
+          },
+        };
+        break;
 
       case "vendor":
         whereClause = {
           booking: {
             vendor: { username: currentUser.username },
           },
-        }
+        };
         bookingWhereClause = {
           vendor: { username: currentUser.username },
-        }
+        };
         vehicleWhereClause = {
           vendor: { username: currentUser.username },
-        }
-        break
-
-      case "admin":
-        // No additional where clause for admin
-        break
+        };
+        break;
 
       default:
-        return { status: 403, message: "Unauthorized role" }
+        return { status: 403, message: "Unauthorized role" };
     }
 
     const [
@@ -204,12 +270,12 @@ export const getDashboardData = async (startDate?: Date, endDate?: Date) => {
         _count: true,
         orderBy: { startTime: "asc" },
       }),
-    ])
+    ]);
 
     const dailyTripData = dailyTripStats.map((item) => ({
       date: item.startTime?.toISOString().split("T")[0],
       trips: item._count,
-    }))
+    }));
 
     return {
       status: 200,
@@ -224,12 +290,12 @@ export const getDashboardData = async (startDate?: Date, endDate?: Date) => {
         tripsDelivered,
         dailyTripStats: dailyTripData,
       },
-    }
+    };
   } catch (error) {
-    console.error("Error fetching dashboard data:", error)
+    console.error("Error fetching dashboard data:", error);
     if (error instanceof Error) {
-      return { status: 500, message: `Internal server error: ${error.message}` }
+      return { status: 500, message: `Internal server error: ${error.message}` };
     }
-    return { status: 500, message: "Internal server error" }
+    return { status: 500, message: "Internal server error" };
   }
-}
+};

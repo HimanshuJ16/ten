@@ -129,25 +129,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Daily Trip Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data?.dailyTripStats}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="trips" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card> */}
         </>
       )}
     </div>

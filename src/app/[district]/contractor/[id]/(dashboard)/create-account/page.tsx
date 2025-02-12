@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import SignUpFormProvider from '@/components/forms/sign-up/form-provider'
 import RegistrationFormStep from '@/components/forms/sign-up/registration-step'
 import ButtonHandler from '@/components/forms/sign-up/button-handlers'
+import { Loader } from '@/components/loader'
 
 export default function ContractorCreateAccountPage() {
   const { id } = useParams()
@@ -39,7 +40,7 @@ export default function ContractorCreateAccountPage() {
   }, [id, toast])
 
   if (loading) {
-    return <div>Loading...</div>
+    return <Loader loading={loading}>Loading...</Loader>
   }
 
   if (!isValidContractor) {
