@@ -162,6 +162,76 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
     let trips;
 
     switch (currentUser.role) {
+      case "se":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: {
+              gte: startDate,
+              lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
+            },
+            vehicle: {
+              vendor: {
+                jen: {
+                  aen: {
+                    xen: {
+                      se: {
+                        username: currentUser.username,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          include: {
+            vehicle: {
+              include: {
+                vendor: true,
+              },
+            },
+            booking: true, // Include booking to check status
+          },
+          orderBy: { startTime: "desc" },
+        });
+        break;
+
+      case "xen":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: {
+              gte: startDate,
+              lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
+            },
+            vehicle: {
+              vendor: {
+                jen: {
+                  aen: {
+                    xen: {
+                      username: currentUser.username,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          include: {
+            vehicle: {
+              include: {
+                vendor: true,
+              },
+            },
+            booking: true, // Include booking to check status
+          },
+          orderBy: { startTime: "desc" },
+        });
+        break;
+
       case "aen":
         trips = await prisma.trip.findMany({
           where: {
