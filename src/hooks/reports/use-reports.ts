@@ -17,41 +17,40 @@ interface Vendor {
 }
 
 export const useTripsReport = (startDate?: Date, endDate?: Date, vendorId?: string) => {
-  const [data, setData] = useState<TripReportData[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const { toast } = useToast();
+  const [data, setData] = useState<TripReportData[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const { toast } = useToast()
 
   const fetchVendors = useCallback(async () => {
-    const result = await getVendors();
+    const result = await getVendors()
     if (result.status === 200 && result.data) {
-      setVendors(result.data);
+      setVendors(result.data)
     } else {
-      toast({ title: "Error", description: result.message });
+      toast({ title: "Error", description: result.message })
     }
-  }, [toast]);
+  }, [toast])
 
   const fetchTripsReport = useCallback(async () => {
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate) return
 
-    setLoading(true);
-    const result = await getTripsReport(startDate, endDate, vendorId);
+    setLoading(true)
+    const result = await getTripsReport(startDate, endDate, vendorId)
     if (result.status === 200) {
-      setData(result.data ?? null);
+      setData(result.data ?? null)
     } else {
-      toast({ title: "Error", description: result.message });
+      toast({ title: "Error", description: result.message })
     }
-    setLoading(false);
-  }, [startDate, endDate, vendorId, toast]);
+    setLoading(false)
+  }, [startDate, endDate, vendorId, toast])
 
   useEffect(() => {
-    fetchVendors();
-  }, [fetchVendors]);
+    fetchVendors()
+  }, [fetchVendors])
 
   useEffect(() => {
-    fetchTripsReport();
-  }, [fetchTripsReport]);
+    fetchTripsReport()
+  }, [fetchTripsReport])
 
-  return { data, loading, refetch: fetchTripsReport, vendors };
-};
-
+  return { data, loading, refetch: fetchTripsReport, vendors }
+}

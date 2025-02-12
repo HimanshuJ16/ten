@@ -59,60 +59,72 @@ export default function TripsReportPage() {
   }, [])
 
   const handleCopyToClipboard = () => {
-    if (!data) return;
-    const headers = columns.map((col) => col.header).join("\t");
+    if (!data) return
+    const headers = columns.map((col) => col.header).join("\t")
     const rows = data
-      .map((row, index) => `${index + 1}\t${columns.slice(1).map((col) => row[col.accessorKey as keyof TripReportData]).join("\t")}`)
-      .join("\n");
-    navigator.clipboard.writeText(`S.No\t${headers}\n${rows}`);
-  };
-  
+      .map(
+        (row, index) =>
+          `${index + 1}\t${columns
+            .slice(1)
+            .map((col) => row[col.accessorKey as keyof TripReportData])
+            .join("\t")}`,
+      )
+      .join("\n")
+    navigator.clipboard.writeText(`S.No\t${headers}\n${rows}`)
+  }
+
   const handleDownloadCSV = () => {
-    if (!data) return;
-    const headers = columns.map((col) => col.header).join(",");
+    if (!data) return
+    const headers = columns.map((col) => col.header).join(",")
     const rows = data
-      .map((row, index) => `${index + 1},${columns.slice(1).map((col) => row[col.accessorKey as keyof TripReportData]).join(",")}`)
-      .join("\n");
-    const blob = new Blob([`S.No,${headers}\n${rows}`], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "trips_report.csv";
-    a.click();
-  };
-  
+      .map(
+        (row, index) =>
+          `${index + 1},${columns
+            .slice(1)
+            .map((col) => row[col.accessorKey as keyof TripReportData])
+            .join(",")}`,
+      )
+      .join("\n")
+    const blob = new Blob([`S.No,${headers}\n${rows}`], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "trips_report.csv"
+    a.click()
+  }
+
   const handleDownloadExcel = () => {
-    if (!data) return;
+    if (!data) return
     const exportData = data.map((row, index) => {
-      const newRow: Record<string, any> = { "S.No": index + 1 };
+      const newRow: Record<string, any> = { "S.No": index + 1 }
       columns.slice(1).forEach((col) => {
-        newRow[col.header] = row[col.accessorKey as keyof TripReportData];
-      });
-      return newRow;
-    });
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Trips Report");
-    XLSX.writeFile(wb, "trips_report.xlsx");
-  };
-  
+        newRow[col.header] = row[col.accessorKey as keyof TripReportData]
+      })
+      return newRow
+    })
+    const ws = XLSX.utils.json_to_sheet(exportData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Trips Report")
+    XLSX.writeFile(wb, "trips_report.xlsx")
+  }
+
   const handleDownloadPDF = () => {
-    if (!data) return;
-    const doc = new jsPDF();
+    if (!data) return
+    const doc = new jsPDF()
     const tableData: RowInput[] = data.map((row, index) => [
       index + 1,
       ...columns.slice(1).map((col) => String(row[col.accessorKey as keyof TripReportData])),
-    ]);
-  
-    doc.setFontSize(16);
-    doc.text("Revenue Report", 14, 15);
-    doc.setFontSize(10);
+    ])
+
+    doc.setFontSize(16)
+    doc.text("Revenue Report", 14, 15)
+    doc.setFontSize(10)
     doc.text(
       `Date: ${date?.from ? format(date.from, "PPP") : "All"} to ${date?.to ? format(date.to, "PPP") : "All"}`,
       14,
       25,
-    );
-  
+    )
+
     autoTable(doc, {
       head: [columns.map((col) => col.header)],
       body: tableData,
@@ -121,8 +133,8 @@ export default function TripsReportPage() {
       styles: { fontSize: 8, cellPadding: 1 },
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       alternateRowStyles: { fillColor: [224, 224, 224] },
-    });
-  
+    })
+
     if (data.length > 0) {
       const totals = data.reduce(
         (acc, row) => ({
@@ -130,17 +142,17 @@ export default function TripsReportPage() {
           totalDistance: acc.totalDistance + row.totalDistance,
         }),
         { totalTrips: 0, totalDistance: 0 },
-      );
-  
+      )
+
       autoTable(doc, {
         body: [["Total:", totals.totalTrips.toString(), totals.totalDistance.toFixed(2)]],
         styles: { fontSize: 8, cellPadding: 1, fontStyle: "bold" },
         theme: "grid",
-      });
+      })
     }
-  
-    doc.save("trips_report.pdf");
-  };
+
+    doc.save("trips_report.pdf")
+  }
 
   return (
     <div className="space-y-6">
@@ -149,12 +161,18 @@ export default function TripsReportPage() {
           {userRole !== "vendor" && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">Vendor</label>
-              <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+              <Select
+                value={selectedVendor}
+                onValueChange={(value) => {
+                  setSelectedVendor(value)
+                  refetch()
+                }}
+              >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Vendor</SelectItem>
+                  <SelectItem value="all">All Vendors</SelectItem>
                   {vendors?.map((vendor) => (
                     <SelectItem key={vendor.id} value={vendor.id}>
                       {vendor.username}
@@ -224,10 +242,10 @@ export default function TripsReportPage() {
 
       {loading ? (
         <div className="text-center py-10">Loading...</div>
-      ) : data ? (
+      ) : data && data.length > 0 ? (
         <DataTable columns={columns} data={data} onAdd={() => {}} onEdit={() => {}} onDelete={() => {}} />
       ) : (
-        <div className="text-center py-10">No data available. Please generate a report.</div>
+        <div className="text-center py-10">No data available for the selected criteria.</div>
       )}
     </div>
   )

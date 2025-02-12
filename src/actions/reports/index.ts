@@ -36,11 +36,11 @@ async function getCurrentUser() {
 }
 
 export const getVendors = async () => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return { status: 401, message: "Unauthorized" };
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { status: 401, message: "Unauthorized" }
 
   try {
-    let vendors: { id: string; username: string }[];
+    let vendors: { id: string; username: string }[]
 
     switch (currentUser.role) {
       case "se":
@@ -63,8 +63,8 @@ export const getVendors = async () => {
           orderBy: {
             username: "asc",
           },
-        });
-        break;
+        })
+        break
 
       case "xen":
         vendors = await prisma.vendor.findMany({
@@ -73,7 +73,7 @@ export const getVendors = async () => {
               aen: {
                 xen: {
                   username: currentUser.username,
-                }
+                },
               },
             },
           },
@@ -84,8 +84,8 @@ export const getVendors = async () => {
           orderBy: {
             username: "asc",
           },
-        });
-        break;
+        })
+        break
 
       case "aen":
         // Get all vendors under all JENs managed by the AEN
@@ -104,8 +104,8 @@ export const getVendors = async () => {
           orderBy: {
             username: "asc",
           },
-        });
-        break;
+        })
+        break
 
       case "jen":
         // Get all vendors under the JEN
@@ -122,13 +122,13 @@ export const getVendors = async () => {
           orderBy: {
             username: "asc",
           },
-        });
-        break;
+        })
+        break
 
       case "vendor":
         // Vendors don't need to see other vendors, so return an empty array
-        vendors = [];
-        break;
+        vendors = []
+        break
 
       default:
         // For other roles, return all vendors (or handle accordingly)
@@ -140,26 +140,26 @@ export const getVendors = async () => {
           orderBy: {
             username: "asc",
           },
-        });
-        break;
+        })
+        break
     }
 
     return {
       status: 200,
       data: vendors,
-    };
+    }
   } catch (error) {
-    console.error("Error fetching vendors:", error);
-    return { status: 500, message: "Internal server error" };
+    console.error("Error fetching vendors:", error)
+    return { status: 500, message: "Internal server error" }
   }
-};
+}
 
 export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?: string) => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return { status: 401, message: "Unauthorized" };
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { status: 401, message: "Unauthorized" }
 
   try {
-    let trips;
+    let trips
 
     switch (currentUser.role) {
       case "se":
@@ -195,8 +195,8 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
 
       case "xen":
         trips = await prisma.trip.findMany({
@@ -229,8 +229,8 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
 
       case "aen":
         trips = await prisma.trip.findMany({
@@ -261,8 +261,8 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
 
       case "jen":
         trips = await prisma.trip.findMany({
@@ -291,8 +291,8 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
 
       case "vendor":
         trips = await prisma.trip.findMany({
@@ -319,8 +319,8 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
 
       default:
         trips = await prisma.trip.findMany({
@@ -342,38 +342,44 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
             booking: true, // Include booking to check status
           },
           orderBy: { startTime: "desc" },
-        });
-        break;
+        })
+        break
+    }
+
+    if (vendorId && vendorId !== "all") {
+      trips = trips.filter((trip) => trip.vehicle.vendorId === vendorId)
     }
 
     // Aggregate trips by vehicle and vendor
-    const aggregatedData = trips.reduce((acc, trip) => {
-      const key = `${trip.vehicle.vendor?.username || "N/A"}-${trip.vehicle.vehicleNumber}`;
+    const aggregatedData = trips.reduce(
+      (acc, trip) => {
+        const key = `${trip.vehicle.vendor?.username || "N/A"}-${trip.vehicle.vehicleNumber}`
 
-      if (!acc[key]) {
-        acc[key] = {
-          username: trip.vehicle.vendor?.username || "N/A",
-          vehicleNumber: trip.vehicle.vehicleNumber,
-          totalTrips: 0,
-          totalDistance: 0,
-        };
-      }
+        if (!acc[key]) {
+          acc[key] = {
+            username: trip.vehicle.vendor?.username || "N/A",
+            vehicleNumber: trip.vehicle.vehicleNumber,
+            totalTrips: 0,
+            totalDistance: 0,
+          }
+        }
 
-      acc[key].totalTrips += 1;
-      acc[key].totalDistance += trip.distance || 0;
+        acc[key].totalTrips += 1
+        acc[key].totalDistance += trip.distance || 0
 
-      return acc;
-    }, {} as Record<string, any>);
+        return acc
+      },
+      {} as Record<string, any>,
+    )
 
-    const reportData = Object.values(aggregatedData);
+    const reportData = Object.values(aggregatedData)
 
     return {
       status: 200,
       data: reportData,
-    };
+    }
   } catch (error) {
-    console.error("Error fetching trips report:", error);
-    return { status: 500, message: "Internal server error" };
+    console.error("Error fetching trips report:", error)
+    return { status: 500, message: "Internal server error" }
   }
-};
-
+}
