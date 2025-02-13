@@ -84,7 +84,6 @@ export default function TrackingComponent() {
   return (
     <Card className="w-full mt-[-1.5rem]">
       <CardHeader>
-        <CardTitle className="text-lg">Vehicle Tracking</CardTitle>
         <CardTitle className="text-red-500 text-sm">* Note: This feature is only available for active trips</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -108,7 +107,7 @@ export default function TrackingComponent() {
           </>
         ) : (
           <>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-[-.5rem]">
               <PhoneCall className="w-4 h-4" />
               <span>Driver Contact: {trackingData.driverContactNumber}</span>
             </div>
