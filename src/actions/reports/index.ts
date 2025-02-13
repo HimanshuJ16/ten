@@ -43,6 +43,25 @@ export const getVendors = async () => {
     let vendors: { id: string; username: string }[]
 
     switch (currentUser.role) {
+      case "contractor":
+        vendors = await prisma.vendor.findMany({
+          where: {
+            jen: {
+              contractor: {
+                username: currentUser.username,
+              },
+            },
+          },
+          select: {
+            id: true,
+            username: true,
+          },
+          orderBy: {
+            username: "asc",
+          },
+        })
+        break
+      
       case "se":
         vendors = await prisma.vendor.findMany({
           where: {
@@ -162,6 +181,38 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
     let trips
 
     switch (currentUser.role) {
+      case 'contractor':
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: {
+              gte: startDate,
+              lte: endDate,
+            },
+            booking: {
+              status: "approved", // Only include trips with approved booking status
+            },
+            vehicle: {
+              vendor: {
+                jen: {
+                  contractor: {
+                    username: currentUser.username
+                  }
+                },
+              },
+            },
+          },
+          include: {
+            vehicle: {
+              include: {
+                vendor: true,
+              },
+            },
+            booking: true, // Include booking to check status
+          },
+          orderBy: { startTime: "desc" },
+        })
+        break
+
       case "se":
         trips = await prisma.trip.findMany({
           where: {

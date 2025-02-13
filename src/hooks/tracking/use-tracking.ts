@@ -74,6 +74,12 @@ export const useTracking = () => {
   useEffect(() => {
     if (selectedBooking) {
       fetchTrackingData()
+
+      // Set up interval to fetch tracking data every 15 seconds
+      const intervalId = setInterval(fetchTrackingData, 15000)
+
+      // Clean up interval on unmount or when selectedBooking changes
+      return () => clearInterval(intervalId)
     }
   }, [selectedBooking, fetchTrackingData])
 
