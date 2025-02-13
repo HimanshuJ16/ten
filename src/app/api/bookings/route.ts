@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
     const formattedBookings = response.map(booking => ({
       bookingId: booking.bookingId,
-      journeyDate: booking.journeyDate ? new Date(booking.journeyDate).toLocaleString() : null,
+      journeyDate: booking.journeyDate ? new Date(booking.journeyDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : null,
       hydrant: {
         name: booking.hydrantName,
         address: booking.hydrantAddress,
