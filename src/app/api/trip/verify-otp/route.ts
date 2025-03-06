@@ -4,13 +4,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber, otp, otpToken, tripId } = await request.json();
+    const { verificationId, otp, tripId } = await request.json();
 
-    if (!phoneNumber || !otp || !otpToken || !tripId) {
+    if (!verificationId || !otp || !tripId) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    const verifyResponse = await verifyOtp(phoneNumber, otp, otpToken);
+    const verifyResponse = await verifyOtp(verificationId, otp);
 
     if (!verifyResponse.success) {
       return NextResponse.json({ success: false, error: verifyResponse.error }, { status: 400 });
