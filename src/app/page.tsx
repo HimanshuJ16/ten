@@ -10,7 +10,7 @@ import Solution from "@/components/landing-page/sections/solution";
 
 export default function Home() {
   return (
-    <main>
+    <main className="overflow-hidden">
       <Header />
       <Hero />
       <Problem />
