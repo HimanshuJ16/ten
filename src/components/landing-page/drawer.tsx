@@ -15,7 +15,7 @@ import Image from 'next/image'
 import { useEffect, useState } from "react";
 import { getUserFullName } from "@/actions/settings";
 
-export default function drawerDemo() {
+export default function DrawerDemo() {
   const [fullName, setFullName] = useState<string | null>(null);
   
   useEffect(() => {
