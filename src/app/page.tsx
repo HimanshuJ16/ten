@@ -1,26 +1,25 @@
-import Image from "next/image";
+import CTA from "@/components/landing-page/sections/cta";
+import FAQ from "@/components/landing-page/sections/faq";
+import Features from "@/components/landing-page/sections/features";
+import Footer from "@/components/landing-page/sections/footer";
+import Header from "@/components/landing-page/sections/header";
+import Hero from "@/components/landing-page/sections/hero";
+import HowItWorks from "@/components/landing-page/sections/how-it-works";
+import Problem from "@/components/landing-page/sections/problem";
+import Solution from "@/components/landing-page/sections/solution";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="/auth/sign-in"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Start Here!
-          </a>
-        </div>
-      </main>
-    </div>
+    <main>
+      <Header />
+      <Hero />
+      <Problem />
+      <Solution />
+      <HowItWorks />
+      <Features />
+      <FAQ />
+      <CTA />
+      <Footer />
+    </main>
   );
 }

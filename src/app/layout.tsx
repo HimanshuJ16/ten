@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { cn } from '@/lib/utils'
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'] })
 
@@ -17,7 +18,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true} className={jakarta.className}>
+      <head>
+        <link rel="preconnect" href="https://rsms.me/" />
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+      </head>
+      <body 
+        suppressHydrationWarning={true}
+        className={jakarta.className + " " + cn(
+          "min-h-screen bg-background antialiased w-full mx-auto scroll-smooth"
+        )}
+      >
         {children}
         <Toaster />
       </body>
