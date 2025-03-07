@@ -1,3 +1,5 @@
+"use client";
+
 import { buttonVariants } from "@/components/landing-page/ui/button";
 import {
   Drawer,

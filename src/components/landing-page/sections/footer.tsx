@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer>
       <div className="max-w-6xl mx-auto py-16 sm:px-10 px-5 pb-0">
-        <a
+        <Link
           href="/"
           className="relative mr-6 mb-6 flex items-center space-x-2"
         >
@@ -20,7 +20,7 @@ export default function Footer() {
             width={0}
             height={0}
           />
-        </a>
+        </Link>
         <div className="max-w-6xl mx-auto border-t py-2 grid md:grid-cols-2 h-full justify-between w-full grid-cols-1 gap-1">
           <span className="text-sm tracking-tight text-foreground">
             Copyright © {new Date().getFullYear()}{" "}
