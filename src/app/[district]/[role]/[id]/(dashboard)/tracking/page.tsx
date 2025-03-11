@@ -3,7 +3,9 @@ import React from 'react'
 
 const page = () => {
   return (
-    <div><TrackingComponent /></div>
+    <div>
+      <TrackingComponent />
+    </div>
   )
 }
 

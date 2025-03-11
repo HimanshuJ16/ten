@@ -1,7 +1,6 @@
 import SignInFormProvider from '@/components/forms/sign-in/form-provider'
 import LoginForm from '@/components/forms/sign-in/login-form'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 import React from 'react'
 
 export default function SignInPage() {
@@ -18,15 +17,6 @@ export default function SignInPage() {
               >
                 Sign In
               </Button>
-              {/* <p>
-                Don't have an account?{' '}
-                <Link
-                  href="/auth/sign-up"
-                  className="font-bold"
-                >
-                  Create one
-                </Link>
-              </p> */}
             </div>
           </div>
         </SignInFormProvider>

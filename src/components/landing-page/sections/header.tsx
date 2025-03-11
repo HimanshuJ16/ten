@@ -35,7 +35,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="relative sticky top-0 z-50 py-2 bg-background/60 backdrop-blur">
+    <header className="sticky top-0 z-50 py-2 bg-background/60 backdrop-blur">
       <div className="flex justify-between items-center container">
         <Link href="/" title="brand-logo" className="relative mr-6 flex items-center space-x-2">
           <Image
