@@ -42,7 +42,7 @@ export default function DrawerDemo() {
               className="relative mr-6 flex items-center space-x-2"
             >
               <Image
-                src="/assets/logo.png"
+                src="/assets/logo.webp"
                 alt="LOGO"
                 sizes="100vw"
                 style={{

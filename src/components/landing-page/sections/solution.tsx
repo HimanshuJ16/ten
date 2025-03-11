@@ -16,7 +16,7 @@ const features = [
     content: (
       <>
         <Safari
-          src={`/assets/booking.png`}
+          src={`/assets/booking.webp`}
           url="https://phedtanker.vercel.app/.../booking"
           className="-mb-32 aspect-[16/9] object-cover mt-4 max-h-64 w-full px-4 select-none drop-shadow-[0_0_28px_rgba(0,0,0,.1)] group-hover:translate-y-[-10px] transition-all duration-300"
         />
@@ -31,7 +31,7 @@ const features = [
       "order-3 xl:order-none hover:bg-blue-500/10 transition-all duration-500 ease-out",
     content: (
       <Safari
-        src={`/assets/vehicles.png`}
+        src={`/assets/vehicles.webp`}
         url="https://phedtanker.vercel.app/.../vehicle"
         className="-mb-32 mt-4 max-h-64 w-full px-4 select-none drop-shadow-[0_0_28px_rgba(0,0,0,.1)] group-hover:translate-y-[-10px] transition-all duration-300"
       />
@@ -56,7 +56,7 @@ const features = [
           width={800}
         />
         <Safari
-          src={`/assets/ca1.png`}
+          src={`/assets/ca1.webp`}
           url="https://phedtanker.vercel.app/.../dashboard"
           className="-mb-48 ml-12 mt-16 h-full px-4 select-none drop-shadow-[0_0_28px_rgba(0,0,0,.1)] group-hover:translate-x-[-10px] transition-all duration-300"
         />
@@ -73,7 +73,7 @@ const features = [
       <>
         <Ripple className="absolute -bottom-full" />
         <Safari
-          src={`/assets/ca.png`}
+          src={`/assets/ca.webp`}
           url="https://phedtanker.vercel.app/.../create-account"
           className="-mb-32 mt-4 max-h-64 w-full px-4 select-none drop-shadow-[0_0_28px_rgba(0,0,0,.1)] group-hover:translate-y-[-10px] transition-all duration-300"
         />

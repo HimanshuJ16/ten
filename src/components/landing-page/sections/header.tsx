@@ -39,7 +39,7 @@ export default function Header() {
       <div className="flex justify-between items-center container">
         <Link href="/" title="brand-logo" className="relative mr-6 flex items-center space-x-2">
           <Image
-            src="/assets/logo.png"
+            src="/assets/logo.webp"
             alt="LOGO"
             sizes="100vw"
             style={{ width: "180px", height: "auto" }}
