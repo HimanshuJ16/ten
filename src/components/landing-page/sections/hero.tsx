@@ -99,15 +99,17 @@ function HeroCTA() {
 function HeroScrollDemo() {
   return (
     <div className="flex flex-col overflow-hidden">
-      <ContainerScroll titleComponent={<></>}>
-        {/* Optimized Image Loading for LCP */}
+      <ContainerScroll>
         <Image
           src="/assets/hero3.webp"
           alt="hero"
-          height={500} // Adjust size if needed
           width={1000}
-          priority // Loads this image ASAP
-          className="mx-auto rounded-2xl w-auto object-cover h-full object-left-top"
+          height={500}
+          priority
+          loading="eager"
+          quality={75}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1000px"
+          className="rounded-2xl object-cover h-full w-auto"
           draggable={false}
         />
       </ContainerScroll>

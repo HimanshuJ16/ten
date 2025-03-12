@@ -3,10 +3,8 @@ import React, { useRef } from "react";
 import { useScroll, useTransform, motion, MotionValue } from "motion/react";
 
 export const ContainerScroll = ({
-  titleComponent,
   children,
 }: {
-  titleComponent: string | React.ReactNode;
   children: React.ReactNode;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,19 +48,6 @@ export const ContainerScroll = ({
         </Card>
       </div>
     </div>
-  );
-};
-
-export const Header = ({ translate, titleComponent }: any) => {
-  return (
-    <motion.div
-      style={{
-        translateY: translate,
-      }}
-      className="div max-w-5xl mx-auto text-center"
-    >
-      {titleComponent}
-    </motion.div>
   );
 };
 
