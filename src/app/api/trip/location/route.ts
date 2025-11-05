@@ -2,6 +2,9 @@ import { neon } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 import { calculateDistance } from "@/lib/distance";
 
+// Define a threshold (in kilometers) to ignore GPS jitter. 0.005 km = 5 meters.
+const MINIMUM_DISTANCE_THRESHOLD_KM = 0.005;
+
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
@@ -27,6 +30,8 @@ export async function POST(request: Request) {
       SELECT id, latitude, longitude
       FROM "GpsLocation"
       WHERE "tripId" = ${id}::uuid
+      ORDER BY "timestamp" DESC
+      LIMIT 1
     `;
 
     let distanceTraveled = 0;
@@ -47,7 +52,7 @@ export async function POST(request: Request) {
           "speed" = ${speed || null},
           "heading" = ${heading || null},
           "timestamp" = NOW()
-        WHERE "tripId" = ${id}::uuid
+        WHERE id = ${existingLocation[0].id}
         RETURNING id
       `;
     } else {
@@ -73,18 +78,21 @@ export async function POST(request: Request) {
       `;
     }
 
-    // Update trip distance
-    await sql`
-      UPDATE "Trip"
-      SET distance = COALESCE(distance, 0) + ${distanceTraveled}
-      WHERE id = ${id}::uuid
-    `;
+    // --- UPDATED LOGIC ---
+    // Only add to the trip's total distance if the movement is significant
+    if (distanceTraveled > MINIMUM_DISTANCE_THRESHOLD_KM) {
+      await sql`
+        UPDATE "Trip"
+        SET distance = COALESCE(distance, 0) + ${distanceTraveled}
+        WHERE id = ${id}::uuid
+      `;
+    }
 
     return NextResponse.json({
       success: true,
       message: existingLocation.length > 0 ? "GPS location updated successfully" : "GPS location created successfully",
       locationId: result[0].id,
-      distanceTraveled,
+      distanceTraveled: distanceTraveled > MINIMUM_DISTANCE_THRESHOLD_KM ? distanceTraveled : 0,
     });
   } catch (error) {
     console.error("Error updating GPS location:", error);

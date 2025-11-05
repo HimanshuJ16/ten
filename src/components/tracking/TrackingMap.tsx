@@ -74,9 +74,17 @@ export default function TrackingMap({ center, zoom }: TrackingMapProps) {
     if (!map) return
 
     const view = map.getView()
-    view.setCenter(fromLonLat(center))
-    view.setZoom(zoom)
+    const newCenter = fromLonLat(center)
 
+    // --- THIS IS THE CHANGE ---
+    // Animate the view (the map camera) to the new center
+    view.animate({
+      center: newCenter,
+      duration: 500, // 500ms animation for a smooth pan
+    })
+    // -------------------------
+
+    // Update the marker's position instantly
     const vectorLayer = map
       .getLayers()
       .getArray()
@@ -86,13 +94,12 @@ export default function TrackingMap({ center, zoom }: TrackingMapProps) {
       const features = source?.getFeatures()
       if (features && features.length > 0) {
         const markerFeature = features[0]
-        markerFeature.setGeometry(new Point(fromLonLat(center)))
+        markerFeature.setGeometry(new Point(newCenter))
       }
     }
-  }, [center, zoom, map])
+  }, [center, zoom, map]) // Keep zoom here in case you want to change it
 
   if (!isMounted) return null
 
   return <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
 }
-
