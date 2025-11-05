@@ -111,6 +111,30 @@ export default function TrackingComponent() {
               <PhoneCall className="w-4 h-4" />
               <span>Driver Contact: {trackingData.driverContactNumber}</span>
             </div>
+
+            {/* --- THIS IS THE NEW BLOCK TO DISPLAY LIVE LOCATION --- */}
+            {trackingData.currentLocation && (
+              <Card className="bg-muted">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Live Coordinates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Latitude:</span>
+                    <span className="font-mono">{trackingData.currentLocation.latitude.toFixed(6)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Longitude:</span>
+                    <span className="font-mono">{trackingData.currentLocation.longitude.toFixed(6)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* ---------------------------------------------------- */}
+
             <div className="h-[400px] w-full rounded-md overflow-hidden">
               {trackingData.currentLocation && (
                 <TrackingMap
@@ -119,15 +143,9 @@ export default function TrackingComponent() {
                 />
               )}
             </div>
-            {trackingData.currentLocation && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span>
-                  Current Location: {trackingData.currentLocation.latitude.toFixed(6)},{" "}
-                  {trackingData.currentLocation.longitude.toFixed(6)}
-                </span>
-              </div>
-            )}
+           
+            {/* I removed the old, small location text from here */}
+
             <Button onClick={stopTrackingTrip} variant="destructive" className="w-full">
               Stop Tracking
             </Button>
