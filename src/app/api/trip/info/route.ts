@@ -28,8 +28,12 @@ export async function GET(request: Request) {
         b.status as "bookingStatus",
         h.name as "hydrantName",
         h.address as "hydrantAddress",
+        h.latitude as "hydrantLatitude",
+        h.longitude as "hydrantLongitude",
         d.name as "destinationName",
         d.address as "destinationAddress",
+        d.latitude as "destinationLatitude",
+        d.longitude as "destinationLongitude",
         c.name as "customerName",
         c."contactNumber" as "customerContact",
         c.address as "customerAddress"
@@ -61,11 +65,15 @@ export async function GET(request: Request) {
       },
       hydrant: {
         name: trip.hydrantName,
-        address: trip.hydrantAddress
+        address: trip.hydrantAddress,
+        latitude: trip.hydrantLatitude,
+        longitude: trip.hydrantLongitude
       },
       destination: {
         name: trip.destinationName,
-        address: trip.destinationAddress
+        address: trip.destinationAddress,
+        latitude: trip.destinationLatitude,
+        longitude: trip.destinationLongitude
       },
       customer: {
         name: trip.customerName,
