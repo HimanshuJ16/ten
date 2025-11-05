@@ -99,7 +99,7 @@ export const useTracking = () => {
 
       // 4. Listen for new location updates
       socketRef.current.on("new_location", (location: LiveLocation) => {
-        console.log("Received new location:", location);
+        console.log("[RECEIVED] New location from socket:", location);
         setTrackingData((prevData) => {
           if (!prevData) return null;
           return {
