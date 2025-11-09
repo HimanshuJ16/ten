@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       await sql`
         UPDATE "Trip"
         SET 
-          status = 'COMPLETED', 
+          status = 'completed', 
           "endTime" = NOW(),
           distance = ${finalTotalDistance} -- Overwrite with the final, accurate distance
         WHERE id = ${tripId}::uuid
