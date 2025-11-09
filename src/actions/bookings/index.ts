@@ -328,3 +328,37 @@ export const getTripDetails = async (bookingId: string) => {
     return { status: 500, message: "Internal server error" }
   }
 }
+
+export const cancelBooking = async (id: string, reason: string) => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { status: 401, message: 'Unauthorized' }
+
+  if (!['aen', 'jen'].includes(currentUser.role)) {
+    return { status: 403, message: 'Unauthorized to cancel bookings' }
+  }
+
+  if (!id) {
+    return { status: 400, message: 'Booking ID is required' }
+  }
+
+  if (!reason || reason.trim().length < 10) {
+    return { status: 400, message: 'A cancellation reason of at least 10 characters is required' }
+  }
+
+  try {
+    const updatedBooking = await client.booking.update({
+      where: { id },
+      data: {
+        approved: false,
+        status: 'cancelled',
+        cancellationReason: reason,
+      },
+    })
+
+    revalidatePath('/bookings')
+    return { status: 200, message: 'Booking cancelled successfully', data: updatedBooking }
+  } catch (error) {
+    console.error('Error cancelling booking:', error)
+    return { status: 500, message: 'Internal server error' }
+  }
+}

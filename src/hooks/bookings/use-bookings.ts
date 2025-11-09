@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
-import { getBookings, addBooking, updateBooking, deleteBooking, approveBooking, disapproveBooking } from '@/actions/bookings'
+import { getBookings, addBooking, updateBooking, deleteBooking, approveBooking, disapproveBooking, cancelBooking } from '@/actions/bookings'
 import { Booking, Vendor } from '@prisma/client'
 import { BookingSchemaType } from '@/schemas/booking.schema'
 import { getVendorDetails } from '@/actions/vendors'; // Import getVendorDetails
@@ -112,6 +112,24 @@ export const useBookings = () => {
     setLoading(false)
   }
 
+  const onCancelBooking = async (id: string, reason: string) => {
+    setLoading(true)
+    const result = await cancelBooking(id, reason)
+    if (result.status === 200) {
+      toast({ title: 'Success', description: result.message })
+      setBookings((prevBookings) =>
+        prevBookings.map((booking) =>
+          booking.id === id
+            ? { ...booking, status: 'cancelled', approved: false, cancellationReason: reason }
+            : booking,
+        ),
+      )
+    } else {
+      toast({ title: 'Error', description: result.message, variant: 'destructive' })
+    }
+    setLoading(false)
+  }
+
   return {
     bookings,
     loading,
@@ -119,6 +137,7 @@ export const useBookings = () => {
     onUpdateBooking,
     onDeleteBooking,
     onApproveBooking,
-    onDisapproveBooking
+    onDisapproveBooking,
+    onCancelBooking,
   }
 }

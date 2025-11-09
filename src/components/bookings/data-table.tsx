@@ -125,6 +125,8 @@ export function BookingsDataTable<TData extends Booking, TValue>({
         return 'bg-green-50 hover:bg-green-100'
       case 'disapproved':
         return 'bg-red-50 hover:bg-red-100'
+      case 'cancelled':
+        return 'bg-yellow-50 hover:bg-yellow-100 line-through'  
       default:
         return 'hover:bg-gray-100'
     }

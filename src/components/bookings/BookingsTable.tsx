@@ -4,10 +4,17 @@ import { useState, useEffect, useMemo } from "react"
 import { BookingsDataTable, type Booking } from "./data-table"
 import { useBookings } from "@/hooks/bookings/use-bookings"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format, startOfDay, endOfDay } from "date-fns"
-import { Eye, Edit, Check, X, CalendarIcon } from "lucide-react"
+import { Eye, Edit, Check, X, CalendarIcon, Ban } from "lucide-react"
 import { getVendors, getVendorDetails } from "@/actions/vendors"
 import type { BookingSchemaType } from "@/schemas/booking.schema"
 import { getUserRole } from "@/actions/settings"
@@ -21,11 +28,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { Calendar } from "../ui/calendar"
 import { Loader } from "../loader"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function BookingsPage() {
-  const { bookings, onAddBooking, onUpdateBooking, onApproveBooking, onDisapproveBooking, loading } = useBookings()
+  const {
+    bookings,
+    onAddBooking,
+    onUpdateBooking,
+    onApproveBooking,
+    onDisapproveBooking,
+    onCancelBooking, // Added from hook
+    loading,
+  } = useBookings()
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  // State for new cancel dialog
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState("")
+
   const [currentBooking, setCurrentBooking] = useState<BookingSchemaType | null>(null)
   const [formData, setFormData] = useState<BookingSchemaType>({
     type: "normal",
@@ -104,6 +125,27 @@ export default function BookingsPage() {
     resetFormData()
   }
 
+  // New handler for submitting the cancellation
+  const handleCancelBooking = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (currentBooking && cancellationReason) {
+      if (cancellationReason.length < 10) {
+        toast({
+          title: "Error",
+          description: "Cancellation reason must be at least 10 characters long",
+          variant: "destructive",
+        })
+        return
+      }
+      await onCancelBooking(currentBooking.id!, cancellationReason)
+      setIsCancelDialogOpen(false)
+      setCurrentBooking(null)
+      setCancellationReason("")
+    } else {
+      toast({ title: "Error", description: "Cancellation reason is required", variant: "destructive" })
+    }
+  }
+
   const resetFormData = () => {
     setFormData({
       type: "normal",
@@ -162,6 +204,22 @@ export default function BookingsPage() {
     {
       accessorKey: "status",
       header: "Status",
+      // Updated cell to show cancellation reason in a popover
+      cell: ({ row }) => {
+        const booking = row.original as Booking & { cancellationReason?: string | null }
+        if (booking.status === "cancelled" && booking.cancellationReason) {
+          return (
+            <Popover>
+              <PopoverTrigger className="underline cursor-pointer">Cancelled</PopoverTrigger>
+              <PopoverContent>
+                <p className="text-sm font-semibold">Cancellation Reason:</p>
+                <p>{booking.cancellationReason}</p>
+              </PopoverContent>
+            </Popover>
+          )
+        }
+        return row.getValue("status")
+      },
     },
     {
       accessorKey: "trip",
@@ -178,9 +236,12 @@ export default function BookingsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
-        const trip = row.original.trip // Get the trip array
-        const tripStatus = trip && trip.length > 0 ? trip[0].status : null // Get trip status
-        const canEdit = !trip[0] || tripStatus === "rejected" // Check if edit is allowed
+        const trip = row.original.trip
+        const tripStatus = trip && trip.length > 0 ? trip[0].status : null
+        const bookingStatus = row.original.status
+
+        // Show edit button if no trip OR trip is rejected OR booking is pending
+        const canEdit = (!trip[0] || tripStatus === "rejected") && bookingStatus === "pending"
 
         return (
           <div className="w-40">
@@ -231,7 +292,7 @@ export default function BookingsPage() {
                 Edit
               </Button>
             )}
-            {canApprove && row.original.status === "pending" && tripStatus === "completed" && (
+            {canApprove && bookingStatus === "pending" && tripStatus === "completed" && (
               <>
                 <Button
                   variant="outline"
@@ -252,6 +313,22 @@ export default function BookingsPage() {
                   Disapprove
                 </Button>
               </>
+            )}
+
+            {/* Cancel Button Logic: Show if user can approve AND status is pending or approved */}
+            {canApprove && (bookingStatus === "pending" || bookingStatus === "approved") && tripStatus !== "completed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-40 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                onClick={() => {
+                  setCurrentBooking(row.original as unknown as BookingSchemaType)
+                  setIsCancelDialogOpen(true)
+                }}
+              >
+                <Ban className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
             )}
           </div>
         )
@@ -297,6 +374,8 @@ export default function BookingsPage() {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="disapproved">Disapproved</SelectItem>
+              {/* Added "cancelled" to filter options */}
+              <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -321,6 +400,7 @@ export default function BookingsPage() {
         statusFilter={statusFilter}
       />
 
+      {/* --- ADD BOOKING DIALOG --- */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -440,6 +520,7 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* --- EDIT BOOKING DIALOG --- */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -478,6 +559,41 @@ export default function BookingsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* --- NEW CANCEL BOOKING DIALOG --- */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this booking? Please provide a reason below. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCancelBooking} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="cancellationReason">Cancellation Reason</label>
+              <Textarea
+                id="cancellationReason"
+                placeholder="Type your reason here (min 10 characters)..."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>
+                Close
+              </Button>
+              <Button type="submit" variant="destructive" disabled={cancellationReason.length < 10 || loading}>
+                <Loader loading={loading}>Submit Cancellation</Loader>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- TRIP DETAILS DIALOG --- */}
       <Dialog open={isTripDetailOpen} onOpenChange={setIsTripDetailOpen}>
         <DialogContent className="max-w-3xl max-h-[calc(100vh-40px)] p-0">
           <DialogHeader className="p-6 pb-0">
@@ -491,4 +607,3 @@ export default function BookingsPage() {
     </div>
   )
 }
-
