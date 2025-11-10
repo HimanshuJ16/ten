@@ -32,20 +32,21 @@ async function getCurrentUser() {
   }
 }
 
-export const onUpdatePassword = async (oldPassword: string, newPassword: string) => {
+// --- UPDATED ---
+export const onUpdatePassword = async (newPassword: string) => { // Removed oldPassword
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) return { status: 401, message: 'Unauthorized' }
 
-    const user = await client.user.findUnique({
-      where: { id: currentUser.id },
-      select: { password: true }
-    })
-
-    if (!user) return { status: 404, message: 'User not found' }
-
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password)
-    if (!isOldPasswordValid) return { status: 400, message: 'Invalid old password' }
+    // --- REMOVED OLD PASSWORD VALIDATION ---
+    // const user = await client.user.findUnique({
+    //   where: { id: currentUser.id },
+    //   select: { password: true }
+    // })
+    // if (!user) return { status: 404, message: 'User not found' }
+    // const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password)
+    // if (!isOldPasswordValid) return { status: 400, message: 'Invalid old password' }
+    // --- END REMOVED SECTION ---
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10)
     await client.user.update({

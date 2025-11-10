@@ -76,14 +76,15 @@ export const UserLoginSchema: ZodType<UserLoginProps> = z.object({
     }),
 })
 
+// --- UPDATED ---
 export type ChangePasswordProps = {
-  oldPassword: string;
+  // oldPassword: string; // Removed
   newPassword: string;
   confirmNewPassword: string;
 }
 
 export const ChangePasswordSchema: ZodType<ChangePasswordProps> = z.object({
-  oldPassword: z.string().min(1, "Old password is required"),
+  // oldPassword: z.string().min(1, "Old password is required"), // Removed
   newPassword: z
     .string()
     .min(8, { message: 'Your new password must be at least 8 characters long' })

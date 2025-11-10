@@ -25,7 +25,8 @@ export const useChangePassword = () => {
   const onChangePassword = handleSubmit(async (values) => {
     try {
       setLoading(true)
-      const result = await onUpdatePassword(values.oldPassword, values.newPassword)
+      // --- UPDATED: Removed values.oldPassword ---
+      const result = await onUpdatePassword(values.newPassword)
       if (result.status === 200) {
         reset()
         toast({ title: 'Success', description: result.message })

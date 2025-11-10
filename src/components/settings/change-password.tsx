@@ -23,6 +23,7 @@ const ChangePassword = () => {
         className="lg:col-span-4"
       >
         <div className="lg:w-[500px] flex flex-col gap-3">
+          {/* --- FIELD REMOVED ---
           <FormGenerator
             register={register}
             errors={errors}
@@ -32,6 +33,7 @@ const ChangePassword = () => {
             type="password"
             inputType="input"
           />
+          --- FIELD REMOVED --- */}
           <FormGenerator
             register={register}
             errors={errors}
