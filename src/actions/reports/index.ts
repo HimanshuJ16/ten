@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client"
 import { cookies } from "next/headers"
+import { format, formatDistanceStrict } from "date-fns"
 import { verify } from "jsonwebtoken"
 
 const prisma = new PrismaClient()
@@ -431,6 +432,151 @@ export const getTripsReport = async (startDate?: Date, endDate?: Date, vendorId?
     }
   } catch (error) {
     console.error("Error fetching trips report:", error)
+    return { status: 500, message: "Internal server error" }
+  }
+}
+
+// ADD THIS NEW FUNCTION
+export const getBookingsReport = async (startDate?: Date, endDate?: Date, vendorId?: string) => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { status: 401, message: "Unauthorized" }
+
+  try {
+    let trips
+
+    const includeQuery = {
+      vehicle: {
+        include: {
+          vendor: true, // For Vendor Name
+        },
+      },
+      booking: {
+        include: {
+          hydrant: true, // For Hydrant Name
+          destination: true, // For Destination Name
+          customer: true, // For Customer Name & Phone
+        },
+      },
+    }
+
+    switch (currentUser.role) {
+      case 'contractor':
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { jen: { contractor: { username: currentUser.username } } } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      case "se":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { jen: { aen: { xen: { se: { username: currentUser.username } } } } } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      case "xen":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { jen: { aen: { xen: { username: currentUser.username } } } } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      case "aen":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { jen: { aen: { username: currentUser.username } } } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      case "jen":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { jen: { username: currentUser.username } } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      case "vendor":
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+            vehicle: { vendor: { username: currentUser.username } },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+
+      default:
+        trips = await prisma.trip.findMany({
+          where: {
+            startTime: { gte: startDate, lte: endDate },
+            booking: { status: "approved" },
+          },
+          include: includeQuery,
+          orderBy: { startTime: "desc" },
+        })
+        break
+    }
+
+    if (vendorId && vendorId !== "all") {
+      trips = trips.filter((trip) => trip.vehicle.vendorId === vendorId)
+    }
+
+    // Map data to the flat structure you requested
+    const reportData = trips
+      .filter(trip => trip.booking) // Ensure trip has a booking
+      .map((trip) => {
+        let duration = "N/A"
+        if (trip.startTime && trip.endTime) {
+          duration = formatDistanceStrict(trip.endTime, trip.startTime)
+        }
+
+        return {
+          vendorName: trip.vehicle.vendor?.username || "N/A",
+          hydrantName: trip.booking?.hydrant?.name || "N/A",
+          destinationName: trip.booking?.destination?.name || "N/A",
+          customerName: trip.booking?.customer?.name || "N/A",
+          customerPhone: trip.booking?.customer?.contactNumber || "N/A",
+          vehicleNumber: trip.vehicle.vehicleNumber,
+          startTime: trip.startTime ? format(trip.startTime, "PPP p") : "N/A",
+          endTime: trip.endTime ? format(trip.endTime, "PPP p") : "N/A",
+          duration: duration,
+          totalDistance: trip.distance || 0,
+        }
+      })
+
+    return {
+      status: 200,
+      data: reportData,
+    }
+  } catch (error) {
+    console.error("Error fetching bookings report:", error)
     return { status: 500, message: "Internal server error" }
   }
 }
