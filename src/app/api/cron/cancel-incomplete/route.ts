@@ -2,26 +2,8 @@ import { client } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
-  let parsedData: any = {}
-
-  const contentType = request.headers.get("content-type") || ""
-
-  if (contentType.includes("application/json")) {
-    const rawBody = await request.json()
-    if (process.env.NODE_ENV !== "production") {
-      console.log("🔍 Raw JSON body:", rawBody)
-    }
-    parsedData = rawBody.data || rawBody
-  } else {
-    const formData = await request.formData()
-    for (const [key, value] of formData.entries()) {
-      parsedData[key] = value
-    }
-  }
-
-  const {
-    secret,
-  } = parsedData
+  const { searchParams } = new URL(request.url)
+  const secret = searchParams.get('secret')
 
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ status: 401, message: 'Unauthorized' }, { status: 401 })
