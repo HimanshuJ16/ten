@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // 1. Determine the start date based on the time filter
     const now = new Date()
-    let startDate = new Date()
+    const startDate = new Date()
 
     switch (timeFilter) {
       case 'month':
