@@ -19,31 +19,31 @@ export async function POST(request: Request) {
 
     if (isOtpValid) {
       
-      // --- NEW: RECALCULATE FINAL DISTANCE ---
-      // 1. Fetch all location points for the trip, in order
-      const allLocations = await sql`
-        SELECT latitude, longitude 
-        FROM "GpsLocation"
-        WHERE "tripId" = ${tripId}::uuid
-        ORDER BY "timestamp" ASC
-      `;
+      // // --- NEW: RECALCULATE FINAL DISTANCE ---
+      // // 1. Fetch all location points for the trip, in order
+      // const allLocations = await sql`
+      //   SELECT latitude, longitude 
+      //   FROM "GpsLocation"
+      //   WHERE "tripId" = ${tripId}::uuid
+      //   ORDER BY "timestamp" ASC
+      // `;
 
-      // 2. Calculate the total distance by summing the path
-      let finalTotalDistance = 0;
-      if (allLocations.length > 1) {
-        for (let i = 0; i < allLocations.length - 1; i++) {
-          const pointA = allLocations[i];
-          const pointB = allLocations[i + 1];
-          finalTotalDistance += calculateDistance(
-            pointA.latitude,
-            pointA.longitude,
-            pointB.latitude,
-            pointB.longitude
-          );
-        }
-      }
-      console.log(`Final distance for trip ${tripId}: ${finalTotalDistance} km`);
-      // --- END OF NEW LOGIC ---
+      // // 2. Calculate the total distance by summing the path
+      // let finalTotalDistance = 0;
+      // if (allLocations.length > 1) {
+      //   for (let i = 0; i < allLocations.length - 1; i++) {
+      //     const pointA = allLocations[i];
+      //     const pointB = allLocations[i + 1];
+      //     finalTotalDistance += calculateDistance(
+      //       pointA.latitude,
+      //       pointA.longitude,
+      //       pointB.latitude,
+      //       pointB.longitude
+      //     );
+      //   }
+      // }
+      // console.log(`Final distance for trip ${tripId}: ${finalTotalDistance} km`);
+      // // --- END OF NEW LOGIC ---
 
 
       // 3. Update the trip with final status, end time, AND final distance
@@ -51,8 +51,6 @@ export async function POST(request: Request) {
         UPDATE "Trip"
         SET 
           status = 'completed', 
-          "endTime" = NOW(),
-          distance = ${finalTotalDistance} -- Overwrite with the final, accurate distance
         WHERE id = ${tripId}::uuid
       `;
 

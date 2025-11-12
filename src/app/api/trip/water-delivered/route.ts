@@ -1,3 +1,4 @@
+import { calculateDistance } from "@/lib/distance"
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
 
@@ -18,9 +19,35 @@ export async function POST(request: Request) {
 
     const sql = neon(process.env.DATABASE_URL!)
 
+    // --- NEW: RECALCULATE FINAL DISTANCE ---
+    // 1. Fetch all location points for the trip, in order
+    const allLocations = await sql`
+      SELECT latitude, longitude 
+      FROM "GpsLocation"
+      WHERE "tripId" = ${tripId}::uuid
+      ORDER BY "timestamp" ASC
+    `;
+
+    // 2. Calculate the total distance by summing the path
+    let finalTotalDistance = 0;
+    if (allLocations.length > 1) {
+      for (let i = 0; i < allLocations.length - 1; i++) {
+        const pointA = allLocations[i];
+        const pointB = allLocations[i + 1];
+        finalTotalDistance += calculateDistance(
+          pointA.latitude,
+          pointA.longitude,
+          pointB.latitude,
+          pointB.longitude
+        );
+      }
+    }
+    console.log(`Final distance for trip ${tripId}: ${finalTotalDistance} km`);
+    // --- END OF NEW LOGIC ---
+
     const result = await sql`
       UPDATE "Trip"
-      SET status = 'delivered', video = ${videoUrl}
+      SET status = 'delivered', video = ${videoUrl}, "endTime" = NOW(), distance = ${finalTotalDistance}
       WHERE id = ${tripId}::uuid
       RETURNING id
     `
