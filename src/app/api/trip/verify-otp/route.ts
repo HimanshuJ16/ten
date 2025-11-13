@@ -1,7 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otpService";
-import { calculateDistance } from "@/lib/distance"; // <-- Import the distance calculator
 
 export async function POST(request: Request) {
   try {
@@ -18,39 +17,9 @@ export async function POST(request: Request) {
     const sql = neon(process.env.DATABASE_URL!);
 
     if (isOtpValid) {
-      
-      // // --- NEW: RECALCULATE FINAL DISTANCE ---
-      // // 1. Fetch all location points for the trip, in order
-      // const allLocations = await sql`
-      //   SELECT latitude, longitude 
-      //   FROM "GpsLocation"
-      //   WHERE "tripId" = ${tripId}::uuid
-      //   ORDER BY "timestamp" ASC
-      // `;
-
-      // // 2. Calculate the total distance by summing the path
-      // let finalTotalDistance = 0;
-      // if (allLocations.length > 1) {
-      //   for (let i = 0; i < allLocations.length - 1; i++) {
-      //     const pointA = allLocations[i];
-      //     const pointB = allLocations[i + 1];
-      //     finalTotalDistance += calculateDistance(
-      //       pointA.latitude,
-      //       pointA.longitude,
-      //       pointB.latitude,
-      //       pointB.longitude
-      //     );
-      //   }
-      // }
-      // console.log(`Final distance for trip ${tripId}: ${finalTotalDistance} km`);
-      // // --- END OF NEW LOGIC ---
-
-
-      // 3. Update the trip with final status, end time, AND final distance
       await sql`
         UPDATE "Trip"
-        SET 
-          status = 'completed', 
+        SET status = 'completed'
         WHERE id = ${tripId}::uuid
       `;
 
