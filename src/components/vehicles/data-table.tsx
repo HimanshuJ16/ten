@@ -41,6 +41,8 @@ export interface Vehicle {
   contactNumber: string;
   email: string;
   vehicleNumber: string;
+  rcUrl?: string;
+  driverLicenseUrl?: string;
   vendorId: string;
   jenId: string | null;
   vendor?: { username: string };

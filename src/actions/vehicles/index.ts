@@ -20,6 +20,8 @@ interface VehicleData {
   email: string;
   vehicleNumber: string;
   vendorId: string;
+  rcUrl?: string;            // Add this
+  driverLicenseUrl?: string;
 }
 
 async function getCurrentUser() {
@@ -179,6 +181,8 @@ export const addVehicle = async (data: VehicleData) => {
             contactNumber: data.contactNumber,
             email: data.email,
             vehicleNumber: data.vehicleNumber,
+            rcUrl: data.rcUrl,
+            driverLicenseUrl: data.driverLicenseUrl,
             vendor: { connect: { id: data.vendorId } },
             jen: { connect: { id: currentUser.role === 'jen' ? user.id : vendorInCircle.jenId } },
           },
@@ -233,6 +237,8 @@ export const updateVehicle = async (vehicleId: string, data: VehicleData) => {
       contactNumber: data.contactNumber,
       email: data.email,
       vehicleNumber: data.vehicleNumber,
+      rcUrl: data.rcUrl,
+      driverLicenseUrl: data.driverLicenseUrl,
     }
 
     if (data.vendorId) {

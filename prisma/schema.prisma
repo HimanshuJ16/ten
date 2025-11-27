@@ -157,6 +157,8 @@ model Vehicle {
   contactNumber  String   
   email          String
   vehicleNumber  String   @unique
+  rcUrl            String?
+  driverLicenseUrl String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   vendorId       String?  @db.Uuid

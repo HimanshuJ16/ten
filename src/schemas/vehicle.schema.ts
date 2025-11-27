@@ -8,6 +8,8 @@ export const VehicleSchema = z.object({
   email: z.string().email('Invalid email address'),
   vehicleNumber: z.string().min(5, 'Vehicle number must be at least 5 characters long'),
   vendorId: z.string().uuid('Invalid vendor ID'),
+  rcUrl: z.string().optional(),
+  driverLicenseUrl: z.string().optional(),
 })
 
 export type VehicleSchemaType = z.infer<typeof VehicleSchema>
