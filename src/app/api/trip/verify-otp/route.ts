@@ -5,21 +5,42 @@ import { verifyOtp } from "@/lib/otpService";
 export async function POST(request: Request) {
   try {
     const { verificationId, otp, tripId } = await request.json();
+    const sql = neon(process.env.DATABASE_URL!);
 
-    if (!verificationId || !otp || !tripId) {
+    // verificationId is optional now to allow fallback to DB-only verification
+    if (!otp || !tripId) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { success: false, error: "Missing required fields (otp or tripId)" },
         { status: 400 }
       );
     }
 
-    const isOtpValid = await verifyOtp(verificationId, otp);
-    const sql = neon(process.env.DATABASE_URL!);
+    // 1. Fetch the OTP stored in the database for this trip
+    const tripResult = await sql`
+      SELECT otp FROM "Trip" 
+      WHERE id = ${tripId}::uuid
+    `;
+    const dbOtp = tripResult.length > 0 ? tripResult[0].otp : null;
 
-    if (isOtpValid) {
+    // 2. Attempt External Verification (if verificationId is present)
+    let isExternalValid = false;
+    if (verificationId) {
+      try {
+        const response = await verifyOtp(verificationId, otp);
+        // Check the .success property of the response object
+        isExternalValid = response.success; 
+      } catch (error) {
+        console.error("External verifyOtp failed:", error);
+        // Continue to check DB OTP even if external service errors out
+      }
+    }
+
+    // 3. Success Condition: Either External is valid OR Database OTP matches
+    if (isExternalValid || (dbOtp && dbOtp === otp)) {
+      // Mark trip as completed and clear OTP fields
       await sql`
         UPDATE "Trip"
-        SET status = 'completed'
+        SET status = 'completed', otp = NULL
         WHERE id = ${tripId}::uuid
       `;
 

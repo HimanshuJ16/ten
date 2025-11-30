@@ -40,22 +40,23 @@ export default function BookingsPage() {
     onApproveBooking,
     onDisapproveBooking,
     onCancelBooking,
-    refreshBookings, // Use the new refresh function
+    refreshBookings,
     loading,
   } = useBookings()
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  // State for new cancel dialog
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState("")
+
   // OTP Dialog State
   const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false)
   const [otp, setOtp] = useState("")
-  const [verificationId, setVerificationId] = useState<string | null>(null)
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null)
   const [otpLoading, setOtpLoading] = useState(false)
 
-  const [cancellationReason, setCancellationReason] = useState("")
-
-  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null) // Changed to generic Booking to hold full data
+  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null)
   const [formData, setFormData] = useState<BookingSchemaType>({
     type: "normal",
     bookingType: "regular",
@@ -133,6 +134,7 @@ export default function BookingsPage() {
     resetFormData()
   }
 
+  // New handler for submitting the cancellation
   const handleCancelBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentBooking && cancellationReason) {
@@ -153,39 +155,51 @@ export default function BookingsPage() {
     }
   }
 
-  // --- OTP HANDLERS ---
+  // OTP Handlers
   const handleSendOtp = async () => {
     if (!currentBooking?.customer?.contactNumber) {
       toast({ title: "Error", description: "Customer phone number not available", variant: "destructive" })
       return
     }
     
+    // Get Trip ID
+    const tripId = currentBooking?.trip && currentBooking.trip.length > 0 ? currentBooking.trip[0].id : null
+    if (!tripId) {
+      toast({ title: "Error", description: "No active trip found for this booking", variant: "destructive" })
+      return
+    }
+
     setOtpLoading(true)
     try {
-      // Use existing API route
       const response = await fetch('/api/trip/send-otp', {
         method: 'POST',
-        body: JSON.stringify({ phoneNumber: currentBooking.customer.contactNumber }),
+        // Pass tripId along with phoneNumber
+        body: JSON.stringify({ 
+            phoneNumber: currentBooking.customer.contactNumber,
+            tripId: tripId,
+            isWeb: true 
+        }),
         headers: { 'Content-Type': 'application/json' }
       })
       
       const data = await response.json()
       
       if (data.success) {
-        setVerificationId(data.verificationId)
-        toast({ title: "Success", description: "OTP sent successfully" })
+        setGeneratedOtp(data.otp) // Store the returned OTP
+        toast({ title: "Success", description: "OTP generated successfully" })
+        refreshBookings() // Update list so OTP persists if dialog is closed/reopened
       } else {
         toast({ title: "Error", description: data.error || "Failed to send OTP", variant: "destructive" })
       }
     } catch (e) {
       console.error(e)
-      toast({ title: "Error", description: "Failed to send OTP", variant: "destructive" })
+      toast({ title: "Error", description: "Failed to generate OTP", variant: "destructive" })
     }
     setOtpLoading(false)
   }
 
   const handleVerifyOtp = async () => {
-    if (!verificationId || !otp) return
+    if (!otp) return
     
     setOtpLoading(true)
     const tripId = currentBooking?.trip && currentBooking.trip.length > 0 ? currentBooking.trip[0].id : null
@@ -197,10 +211,9 @@ export default function BookingsPage() {
     }
 
     try {
-      // Use existing API route
       const response = await fetch('/api/trip/verify-otp', {
         method: 'POST',
-        body: JSON.stringify({ verificationId, otp, tripId }),
+        body: JSON.stringify({ otp, tripId }),
         headers: { 'Content-Type': 'application/json' }
       })
       
@@ -209,9 +222,9 @@ export default function BookingsPage() {
       if (data.success) {
         toast({ title: "Success", description: "Trip verified and completed" })
         setIsOtpDialogOpen(false)
-        setVerificationId(null)
+        setGeneratedOtp(null)
         setOtp("")
-        refreshBookings() // Refresh the table
+        refreshBookings()
       } else {
         toast({ title: "Error", description: data.error || "Invalid OTP", variant: "destructive" })
       }
@@ -280,6 +293,7 @@ export default function BookingsPage() {
     {
       accessorKey: "status",
       header: "Status",
+      // Updated cell to show cancellation reason in a popover
       cell: ({ row }) => {
         const booking = row.original as Booking & { cancellationReason?: string | null }
         if (booking.status === "cancelled" && booking.cancellationReason) {
@@ -300,11 +314,11 @@ export default function BookingsPage() {
       accessorKey: "trip",
       header: "Trip Status",
       cell: ({ row }) => {
-        const trip = row.original.trip
+        const trip = row.original.trip // Get the trip array
         if (trip && trip.length > 0) {
-          return trip[0].status
+          return trip[0].status // Return the status of the first trip
         }
-        return "trip not started"
+        return "trip not started" // Return a default value if no trip exists
       },
     },
     {
@@ -315,9 +329,11 @@ export default function BookingsPage() {
         const tripStatus = trip && trip.length > 0 ? trip[0].status : null
         const bookingStatus = row.original.status
 
+        // Show edit button if no trip OR trip is rejected OR booking is pending
         const canEdit = (!trip[0] || tripStatus === "rejected") && bookingStatus === "pending"
-        // Show OTP button if status is 'delivered'
-        const canVerifyDelivery = tripStatus === "delivered"
+        
+        // Show OTP button if status is 'delivered' AND booking is NOT cancelled
+        const canVerifyDelivery = tripStatus === "delivered" && bookingStatus !== "cancelled"
 
         return (
           <div className="flex flex-col gap-2 w-40">
@@ -326,7 +342,7 @@ export default function BookingsPage() {
               View Details
             </Button>
             
-            {/* NEW: Verify Delivery Button */}
+            {/* Verify Delivery Button */}
             {canVerifyDelivery && (
                <Button
                 variant="default"
@@ -334,7 +350,9 @@ export default function BookingsPage() {
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 onClick={() => {
                     setCurrentBooking(row.original)
-                    setVerificationId(null)
+                    // Check if OTP already exists on the trip
+                    const existingOtp = row.original.trip?.[0]?.otp || null
+                    setGeneratedOtp(existingOtp)
                     setOtp("")
                     setIsOtpDialogOpen(true)
                 }}
@@ -393,6 +411,7 @@ export default function BookingsPage() {
               </>
             )}
 
+            {/* Cancel Button Logic: Show if user can approve AND status is pending or approved */}
             {canApprove && (bookingStatus === "pending" || bookingStatus === "approved") && tripStatus !== "completed" && (
               <Button
                 variant="outline"
@@ -421,11 +440,11 @@ export default function BookingsPage() {
       if (dateA && dateB) {
         return dateB.getTime() - dateA.getTime()
       } else if (dateA) {
-        return -1
+        return -1 // a comes first if b doesn't have a date
       } else if (dateB) {
-        return 1
+        return 1 // b comes first if a doesn't have a date
       }
-      return 0
+      return 0 // both are null, maintain original order
     })
   }, [bookings])
 
@@ -439,7 +458,6 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Existing Header Controls */}
       <div className="flex justify-between items-center">
         <div className="flex space-x-2">
           <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
@@ -452,6 +470,7 @@ export default function BookingsPage() {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="disapproved">Disapproved</SelectItem>
+              {/* Added "cancelled" to filter options */}
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
@@ -477,88 +496,14 @@ export default function BookingsPage() {
         statusFilter={statusFilter}
       />
 
-      {/* --- OTP VERIFICATION DIALOG --- */}
-      <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Verify Trip Delivery</DialogTitle>
-            <DialogDescription>
-              Verify the trip delivery by sending an OTP to the customer.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
-                Customer
-              </Label>
-              <Input
-                id="phone"
-                value={currentBooking?.customer?.name || ""}
-                disabled
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="contact" className="text-right">
-                Phone
-               </Label>
-               <Input
-                 id="contact"
-                 value={currentBooking?.customer?.contactNumber || "N/A"}
-                 disabled
-                 className="col-span-3"
-               />
-            </div>
-            
-            {!verificationId ? (
-                <div className="flex justify-center pt-2">
-                     <Button 
-                       onClick={handleSendOtp} 
-                       disabled={otpLoading || !currentBooking?.customer?.contactNumber}
-                     >
-                       <Loader loading={otpLoading}>Send OTP</Loader>
-                     </Button>
-                </div>
-            ) : (
-                <>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="otp" className="text-right">
-                            OTP
-                        </Label>
-                        <Input
-                            id="otp"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            placeholder="Enter 4-digit OTP"
-                            className="col-span-3"
-                        />
-                    </div>
-                    <div className="flex justify-center gap-2 pt-2">
-                         <Button variant="outline" onClick={handleSendOtp} disabled={otpLoading}>
-                            Resend
-                         </Button>
-                         <Button onClick={handleVerifyOtp} disabled={otpLoading || otp.length < 4}>
-                            <Loader loading={otpLoading}>Verify & Complete</Loader>
-                         </Button>
-                    </div>
-                </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* --- ADD BOOKING DIALOG (Existing) --- */}
+      {/* --- ADD BOOKING DIALOG --- */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        {/* Existing Content... */}
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddBooking} className="space-y-4">
-             {/* ... existing form fields ... */}
-             {/* I am omitting the full content of this form to save space as it hasn't changed, 
-                 but in a real implementation, you would keep the existing form JSX here */}
-             <Select name="type" value={formData.type} onValueChange={handleSelectChange("type")}>
+            <Select name="type" value={formData.type} onValueChange={handleSelectChange("type")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select booking type" />
               </SelectTrigger>
@@ -671,10 +616,10 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- EDIT BOOKING DIALOG (Existing) --- */}
+      {/* --- EDIT BOOKING DIALOG --- */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
-            <DialogHeader>
+          <DialogHeader>
             <DialogTitle>Edit Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdateBooking} className="space-y-4">
@@ -711,10 +656,10 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- NEW CANCEL BOOKING DIALOG (Existing) --- */}
+      {/* --- NEW CANCEL BOOKING DIALOG --- */}
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
         <DialogContent>
-            <DialogHeader>
+          <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
             <DialogDescription>
               Are you sure you want to cancel this booking? Please provide a reason below. This action cannot be
@@ -744,10 +689,75 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- TRIP DETAILS DIALOG (Existing) --- */}
+      {/* --- OTP VERIFICATION DIALOG --- */}
+      <Dialog open={isOtpDialogOpen} onOpenChange={(open) => {
+          setIsOtpDialogOpen(open)
+          if(!open) { setGeneratedOtp(null); setOtp(""); } // Clear on close
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Verify Trip Delivery</DialogTitle>
+            <DialogDescription>
+              Generate an OTP for the customer. If they cannot receive it, you can share the code below with the driver.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Customer Details */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">Customer</Label>
+              <Input id="phone" value={currentBooking?.customer?.name || ""} disabled className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+               <Label htmlFor="contact" className="text-right">Phone</Label>
+               <Input id="contact" value={currentBooking?.customer?.contactNumber || "N/A"} disabled className="col-span-3" />
+            </div>
+            
+            {/* Action Area */}
+            {!generatedOtp ? (
+                <div className="flex justify-center pt-2">
+                     <Button 
+                       onClick={handleSendOtp} 
+                       disabled={otpLoading || !currentBooking?.customer?.contactNumber}
+                     >
+                       <Loader loading={otpLoading}>Generate OTP</Loader>
+                     </Button>
+                </div>
+            ) : (
+                <>
+                    {/* Display OTP for Web Admin */}
+                    <div className="flex flex-col items-center justify-center bg-slate-100 p-4 rounded-lg border-2 border-slate-200 border-dashed my-2">
+                        <span className="text-sm text-slate-500 mb-1">Verification Code</span>
+                        <span className="text-3xl font-bold tracking-[0.5em] text-slate-900">{generatedOtp}</span>
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4 mt-2">
+                        <Label htmlFor="otp" className="text-right">Verify</Label>
+                        <Input
+                            id="otp"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            placeholder="Enter code to verify manually"
+                            className="col-span-3"
+                        />
+                    </div>
+                    <div className="flex justify-center gap-2 pt-2">
+                         <Button variant="ghost" onClick={handleSendOtp} disabled={otpLoading}>
+                            Resend SMS
+                         </Button>
+                         <Button onClick={handleVerifyOtp} disabled={otpLoading || otp.length < 4}>
+                            <Loader loading={otpLoading}>Verify Delivery</Loader>
+                         </Button>
+                    </div>
+                </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- TRIP DETAILS DIALOG --- */}
       <Dialog open={isTripDetailOpen} onOpenChange={setIsTripDetailOpen}>
         <DialogContent className="max-w-3xl max-h-[calc(100vh-40px)] p-0">
-            <DialogHeader className="p-6 pb-0">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>Trip Details</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">

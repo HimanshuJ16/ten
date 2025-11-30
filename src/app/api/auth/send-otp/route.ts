@@ -1,38 +1,12 @@
 import { sendOtp } from "@/lib/otpService"
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber, otpLength, isWeb, tripId } = await request.json()
+    const { phoneNumber, otpLength } = await request.json()
 
     if (!phoneNumber) {
       return NextResponse.json({ success: false, error: "Phone number is required" }, { status: 400 })
-    }
-
-    const sql = neon(process.env.DATABASE_URL!)
-
-    if (isWeb) {
-      // 1. Generate a 4-digit OTP locally
-      const otp = Math.floor(1000 + Math.random() * 9000).toString()
-
-      // 2. Store OTP in the Trip table (and clear any old verificationId)
-      await sql`
-        UPDATE "Trip" 
-        SET otp = ${otp}
-        WHERE id = ${tripId}::uuid
-      `
-
-      // 3. Return the OTP so it can be displayed in the Web Dialog
-      return NextResponse.json(
-        {
-          success: true,
-          otp: otp, 
-          mobileNumber: phoneNumber,
-          message: "OTP generated locally for manual verification"
-        },
-        { status: 200 },
-      )
     }
 
     // Pass optional otpLength if provided, otherwise use default (4)
@@ -60,3 +34,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
+
