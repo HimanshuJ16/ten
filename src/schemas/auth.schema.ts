@@ -10,6 +10,7 @@ export type UserRegistrationProps = {
   confirmPassword: string
   contactNumber: string | null
   parentId?: string // Add this line
+  ratePerTrip?: string
 }
 
 export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
@@ -43,6 +44,7 @@ export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
       .regex(/^\+?[1-9]\d{1,14}$/, { message: 'Please enter a valid phone number' })
       .nullable(),
     parentId: z.string().optional(),
+    ratePerTrip: z.string().optional(),
   })
   .refine((schema) => schema.password === schema.confirmPassword, {
     message: 'Passwords do not match',
@@ -58,6 +60,18 @@ export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
     {
       message: 'Parent ID is required for AEN, JEN, and Vendor roles',
       path: ['parentId'],
+    }
+  )
+  .refine(
+    (schema) => {
+      if (schema.role === 'vendor') {
+        return !!schema.ratePerTrip;
+      }
+      return true;
+    },
+    {
+      message: 'Rate per trip is required for Vendors',
+      path: ['ratePerTrip'],
     }
   )
 

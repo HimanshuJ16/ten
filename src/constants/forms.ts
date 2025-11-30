@@ -73,6 +73,14 @@ export const USER_REGISTRATION_FORM: UserRegistrationProps[] = [
     name: 'confirmPassword',
     type: 'password',
   },
+  {
+    id: '10',
+    inputType: 'input',
+    placeholder: 'Rate per Trip (₹)',
+    name: 'ratePerTrip',
+    type: 'text',
+    condition: (values: any) => values.role === 'vendor',
+  },
 ]
 
 export const USER_LOGIN_FORM: UserRegistrationProps[] = [

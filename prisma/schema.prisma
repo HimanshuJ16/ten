@@ -119,6 +119,7 @@ model Vendor {
   name           String
   username       String   @unique
   district       String
+  ratePerTrip    Float?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   circleId       String   @db.Uuid

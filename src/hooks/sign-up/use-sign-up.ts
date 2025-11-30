@@ -120,7 +120,8 @@ export function useSignUpForm(contractorId?: string) {
           values.district.toLowerCase(),
           values.role,
           values.parentId,
-          contractorId
+          contractorId,
+          values.ratePerTrip ? parseFloat(values.ratePerTrip) : undefined
         );
   
         if (registered?.status !== 200 || !registered.user) {

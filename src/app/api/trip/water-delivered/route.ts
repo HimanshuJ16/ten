@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     const result = await sql`
       UPDATE "Trip"
-      SET status = 'delivered', video = ${videoUrl}, "endTime" = NOW(), distance = ${finalTotalDistance}
+      SET status = 'delivered', video = ${videoUrl}, "endTime" = NOW(), distance = ${2 * finalTotalDistance}
       WHERE id = ${tripId}::uuid
       RETURNING id
     `

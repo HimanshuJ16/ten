@@ -44,6 +44,9 @@ export default function Component({
   }, [district, role, fetchParentRolesData, showParentRoles])
 
   const renderField = (field: any) => {
+    if (field.condition && !field.condition(watch())) {
+      return null
+    }
     switch (field.name) {
       case "district":
         return (

@@ -13,7 +13,8 @@ export async function onCompleteUserRegistration(
   district: string,
   role: string,
   parentId?: string,
-  contractorId?: string
+  contractorId?: string,
+  ratePerTrip?: number
 ) {
   try {
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -144,6 +145,7 @@ export async function onCompleteUserRegistration(
             name: fullname,
             username,
             district,
+            ratePerTrip,
             circle: { connect: { id: circle.id } },
             jen: { connect: { id: parentId } },
           },
