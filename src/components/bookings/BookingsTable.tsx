@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format, startOfDay, endOfDay } from "date-fns"
-import { Eye, Edit, Check, X, CalendarIcon, Ban } from "lucide-react"
+import { Eye, Edit, Check, X, CalendarIcon, Ban, ShieldCheck } from "lucide-react"
 import { getVendors, getVendorDetails } from "@/actions/vendors"
 import type { BookingSchemaType } from "@/schemas/booking.schema"
 import { getUserRole } from "@/actions/settings"
@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils"
 import { Calendar } from "../ui/calendar"
 import { Loader } from "../loader"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function BookingsPage() {
   const {
@@ -37,17 +39,23 @@ export default function BookingsPage() {
     onUpdateBooking,
     onApproveBooking,
     onDisapproveBooking,
-    onCancelBooking, // Added from hook
+    onCancelBooking,
+    refreshBookings, // Use the new refresh function
     loading,
   } = useBookings()
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  // State for new cancel dialog
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  // OTP Dialog State
+  const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [verificationId, setVerificationId] = useState<string | null>(null)
+  const [otpLoading, setOtpLoading] = useState(false)
+
   const [cancellationReason, setCancellationReason] = useState("")
 
-  const [currentBooking, setCurrentBooking] = useState<BookingSchemaType | null>(null)
+  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null) // Changed to generic Booking to hold full data
   const [formData, setFormData] = useState<BookingSchemaType>({
     type: "normal",
     bookingType: "regular",
@@ -125,7 +133,6 @@ export default function BookingsPage() {
     resetFormData()
   }
 
-  // New handler for submitting the cancellation
   const handleCancelBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (currentBooking && cancellationReason) {
@@ -144,6 +151,75 @@ export default function BookingsPage() {
     } else {
       toast({ title: "Error", description: "Cancellation reason is required", variant: "destructive" })
     }
+  }
+
+  // --- OTP HANDLERS ---
+  const handleSendOtp = async () => {
+    if (!currentBooking?.customer?.contactNumber) {
+      toast({ title: "Error", description: "Customer phone number not available", variant: "destructive" })
+      return
+    }
+    
+    setOtpLoading(true)
+    try {
+      // Use existing API route
+      const response = await fetch('/api/trip/send-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phoneNumber: currentBooking.customer.contactNumber }),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setVerificationId(data.verificationId)
+        toast({ title: "Success", description: "OTP sent successfully" })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to send OTP", variant: "destructive" })
+      }
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Error", description: "Failed to send OTP", variant: "destructive" })
+    }
+    setOtpLoading(false)
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!verificationId || !otp) return
+    
+    setOtpLoading(true)
+    const tripId = currentBooking?.trip && currentBooking.trip.length > 0 ? currentBooking.trip[0].id : null
+    
+    if (!tripId) {
+       toast({ title: "Error", description: "No active trip found", variant: "destructive" })
+       setOtpLoading(false)
+       return
+    }
+
+    try {
+      // Use existing API route
+      const response = await fetch('/api/trip/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ verificationId, otp, tripId }),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        toast({ title: "Success", description: "Trip verified and completed" })
+        setIsOtpDialogOpen(false)
+        setVerificationId(null)
+        setOtp("")
+        refreshBookings() // Refresh the table
+      } else {
+        toast({ title: "Error", description: data.error || "Invalid OTP", variant: "destructive" })
+      }
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Error", description: "Verification failed", variant: "destructive" })
+    }
+    setOtpLoading(false)
   }
 
   const resetFormData = () => {
@@ -204,7 +280,6 @@ export default function BookingsPage() {
     {
       accessorKey: "status",
       header: "Status",
-      // Updated cell to show cancellation reason in a popover
       cell: ({ row }) => {
         const booking = row.original as Booking & { cancellationReason?: string | null }
         if (booking.status === "cancelled" && booking.cancellationReason) {
@@ -225,11 +300,11 @@ export default function BookingsPage() {
       accessorKey: "trip",
       header: "Trip Status",
       cell: ({ row }) => {
-        const trip = row.original.trip // Get the trip array
+        const trip = row.original.trip
         if (trip && trip.length > 0) {
-          return trip[0].status // Return the status of the first trip
+          return trip[0].status
         }
-        return "trip not started" // Return a default value if no trip exists
+        return "trip not started"
       },
     },
     {
@@ -240,31 +315,45 @@ export default function BookingsPage() {
         const tripStatus = trip && trip.length > 0 ? trip[0].status : null
         const bookingStatus = row.original.status
 
-        // Show edit button if no trip OR trip is rejected OR booking is pending
         const canEdit = (!trip[0] || tripStatus === "rejected") && bookingStatus === "pending"
+        // Show OTP button if status is 'delivered'
+        const canVerifyDelivery = tripStatus === "delivered"
 
         return (
-          <div className="w-40">
-            <Button variant="outline" size="sm" className="w-40" onClick={() => openTripDetails(row.original.id)}>
+          <div className="flex flex-col gap-2 w-40">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => openTripDetails(row.original.id)}>
               <Eye className="mr-2 h-4 w-4" />
               View Details
             </Button>
+            
+            {/* NEW: Verify Delivery Button */}
+            {canVerifyDelivery && (
+               <Button
+                variant="default"
+                size="sm"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                    setCurrentBooking(row.original)
+                    setVerificationId(null)
+                    setOtp("")
+                    setIsOtpDialogOpen(true)
+                }}
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Verify Delivery
+              </Button>
+            )}
+
             {canEdit && (
               <Button
                 variant="outline"
                 size="sm"
-                className="w-40"
+                className="w-full"
                 onClick={() => {
-                  setCurrentBooking({
-                    id: row.original.id,
-                    type:
-                      row.original.type === "normal" || row.original.type === "emergency"
-                        ? row.original.type
-                        : "normal",
-                    bookingType:
-                      row.original.bookingType === "regular" || row.original.bookingType === "scheduled"
-                        ? row.original.bookingType
-                        : "regular",
+                  setCurrentBooking(row.original)
+                  setFormData({
+                    type: row.original.type as "normal" | "emergency",
+                    bookingType: row.original.bookingType as "regular" | "scheduled",
                     scheduledDateTime: new Date(row.original.scheduledDateTime),
                     vendorId: row.original.vendor.id,
                     customerId: row.original.customer.id,
@@ -272,17 +361,6 @@ export default function BookingsPage() {
                     hydrantId: row.original.hydrant.id,
                     destinationId: row.original.destination.id,
                     approved: row.original.approved,
-                    status:
-                      row.original.status === "approved" ||
-                      row.original.status === "pending" ||
-                      row.original.status === "disapproved"
-                        ? row.original.status
-                        : undefined,
-                  })
-                  setFormData({
-                    ...formData,
-                    vehicleId: row.original.vehicle.id,
-                    vendorId: row.original.vendor.id,
                   })
                   fetchRelatedData(row.original.vendor.id)
                   setIsEditDialogOpen(true)
@@ -297,7 +375,7 @@ export default function BookingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-40 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  className="w-full text-green-600 hover:text-green-700 hover:bg-green-50"
                   onClick={() => onApproveBooking(row.original.id)}
                 >
                   <Check className="mr-2 h-4 w-4" />
@@ -306,7 +384,7 @@ export default function BookingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-40 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => onDisapproveBooking(row.original.id)}
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -315,14 +393,13 @@ export default function BookingsPage() {
               </>
             )}
 
-            {/* Cancel Button Logic: Show if user can approve AND status is pending or approved */}
             {canApprove && (bookingStatus === "pending" || bookingStatus === "approved") && tripStatus !== "completed" && (
               <Button
                 variant="outline"
                 size="sm"
-                className="w-40 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                className="w-full text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                 onClick={() => {
-                  setCurrentBooking(row.original as unknown as BookingSchemaType)
+                  setCurrentBooking(row.original)
                   setIsCancelDialogOpen(true)
                 }}
               >
@@ -344,11 +421,11 @@ export default function BookingsPage() {
       if (dateA && dateB) {
         return dateB.getTime() - dateA.getTime()
       } else if (dateA) {
-        return -1 // a comes first if b doesn't have a date
+        return -1
       } else if (dateB) {
-        return 1 // b comes first if a doesn't have a date
+        return 1
       }
-      return 0 // both are null, maintain original order
+      return 0
     })
   }, [bookings])
 
@@ -362,6 +439,7 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Existing Header Controls */}
       <div className="flex justify-between items-center">
         <div className="flex space-x-2">
           <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
@@ -374,7 +452,6 @@ export default function BookingsPage() {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="disapproved">Disapproved</SelectItem>
-              {/* Added "cancelled" to filter options */}
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
@@ -400,14 +477,88 @@ export default function BookingsPage() {
         statusFilter={statusFilter}
       />
 
-      {/* --- ADD BOOKING DIALOG --- */}
+      {/* --- OTP VERIFICATION DIALOG --- */}
+      <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Verify Trip Delivery</DialogTitle>
+            <DialogDescription>
+              Verify the trip delivery by sending an OTP to the customer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Customer
+              </Label>
+              <Input
+                id="phone"
+                value={currentBooking?.customer?.name || ""}
+                disabled
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+               <Label htmlFor="contact" className="text-right">
+                Phone
+               </Label>
+               <Input
+                 id="contact"
+                 value={currentBooking?.customer?.contactNumber || "N/A"}
+                 disabled
+                 className="col-span-3"
+               />
+            </div>
+            
+            {!verificationId ? (
+                <div className="flex justify-center pt-2">
+                     <Button 
+                       onClick={handleSendOtp} 
+                       disabled={otpLoading || !currentBooking?.customer?.contactNumber}
+                     >
+                       <Loader loading={otpLoading}>Send OTP</Loader>
+                     </Button>
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="otp" className="text-right">
+                            OTP
+                        </Label>
+                        <Input
+                            id="otp"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            placeholder="Enter 4-digit OTP"
+                            className="col-span-3"
+                        />
+                    </div>
+                    <div className="flex justify-center gap-2 pt-2">
+                         <Button variant="outline" onClick={handleSendOtp} disabled={otpLoading}>
+                            Resend
+                         </Button>
+                         <Button onClick={handleVerifyOtp} disabled={otpLoading || otp.length < 4}>
+                            <Loader loading={otpLoading}>Verify & Complete</Loader>
+                         </Button>
+                    </div>
+                </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- ADD BOOKING DIALOG (Existing) --- */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        {/* Existing Content... */}
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddBooking} className="space-y-4">
-            <Select name="type" value={formData.type} onValueChange={handleSelectChange("type")}>
+             {/* ... existing form fields ... */}
+             {/* I am omitting the full content of this form to save space as it hasn't changed, 
+                 but in a real implementation, you would keep the existing form JSX here */}
+             <Select name="type" value={formData.type} onValueChange={handleSelectChange("type")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select booking type" />
               </SelectTrigger>
@@ -520,10 +671,10 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- EDIT BOOKING DIALOG --- */}
+      {/* --- EDIT BOOKING DIALOG (Existing) --- */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
-          <DialogHeader>
+            <DialogHeader>
             <DialogTitle>Edit Booking</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdateBooking} className="space-y-4">
@@ -560,10 +711,10 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- NEW CANCEL BOOKING DIALOG --- */}
+      {/* --- NEW CANCEL BOOKING DIALOG (Existing) --- */}
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
         <DialogContent>
-          <DialogHeader>
+            <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
             <DialogDescription>
               Are you sure you want to cancel this booking? Please provide a reason below. This action cannot be
@@ -593,10 +744,10 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- TRIP DETAILS DIALOG --- */}
+      {/* --- TRIP DETAILS DIALOG (Existing) --- */}
       <Dialog open={isTripDetailOpen} onOpenChange={setIsTripDetailOpen}>
         <DialogContent className="max-w-3xl max-h-[calc(100vh-40px)] p-0">
-          <DialogHeader className="p-6 pb-0">
+            <DialogHeader className="p-6 pb-0">
             <DialogTitle>Trip Details</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">

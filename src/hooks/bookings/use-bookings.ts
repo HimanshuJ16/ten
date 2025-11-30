@@ -3,13 +3,12 @@ import { useToast } from '@/hooks/use-toast'
 import { getBookings, addBooking, updateBooking, deleteBooking, approveBooking, disapproveBooking, cancelBooking } from '@/actions/bookings'
 import { Booking, Vendor } from '@prisma/client'
 import { BookingSchemaType } from '@/schemas/booking.schema'
-import { getVendorDetails } from '@/actions/vendors'; // Import getVendorDetails
-
+import { getVendorDetails } from '@/actions/vendors';
 
 export const useBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(false)
-  const [vendorDetails, setVendorDetails] = useState<Vendor | null>(null); // Add state for vendor details
+  const [vendorDetails, setVendorDetails] = useState<Vendor | null>(null);
   const { toast } = useToast()
 
   const fetchBookings = async () => {
@@ -57,7 +56,6 @@ export const useBookings = () => {
     if (result.status === 200) {
       toast({ title: 'Success', description: result.message })
       await fetchBookings()
-      // Refresh vendor details
       if (data.vendorId) {
         const vendorResult = await getVendorDetails(data.vendorId)
         if (vendorResult.status === 200) {
@@ -139,5 +137,6 @@ export const useBookings = () => {
     onApproveBooking,
     onDisapproveBooking,
     onCancelBooking,
+    refreshBookings: fetchBookings, // Exposed here
   }
 }

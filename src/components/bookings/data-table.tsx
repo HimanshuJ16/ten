@@ -35,7 +35,8 @@ export interface Booking {
   bookingType: string
   scheduledDateTime: Date
   status: string
-  customer: { id: string, name: string }
+  // Updated customer interface to include contactNumber
+  customer: { id: string, name: string, contactNumber?: string | null }
   vehicle: { id: string, vehicleNumber: string }
   hydrant: { id: string, name: string}
   destination: { id: string, name: string }
