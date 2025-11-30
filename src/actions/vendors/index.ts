@@ -155,3 +155,49 @@ export const getVendorDetails = async (vendorId: string) => {
     return { status: 500, message: 'Internal server error' }
   }
 }
+
+export const updateVendorRate = async (vendorId: string, rate: number) => {
+  try {
+    const currentUser = await getCurrentUser();
+    
+    // 1. Basic Authorization Check
+    if (!currentUser || currentUser.role !== 'contractor') {
+      return { status: 401, message: 'Unauthorized' };
+    }
+
+    // 2. Fetch Contractor's Circle ID
+    // We search by username because the User and Contractor models share the username.
+    const contractor = await client.contractor.findUnique({
+      where: { username: currentUser.username },
+      select: { circleId: true }
+    });
+
+    if (!contractor) {
+      return { status: 404, message: 'Contractor profile not found' };
+    }
+
+    // 3. Strict Verification: Check if Vendor exists AND belongs to the Contractor's Circle
+    // We use findFirst with both 'id' and 'circleId' to ensure ownership.
+    const existingVendor = await client.vendor.findFirst({
+      where: {
+        id: vendorId,
+        circleId: contractor.circleId // [!code highlight] Strict security check
+      }
+    });
+
+    if (!existingVendor) {
+      return { status: 403, message: 'Action forbidden: Vendor does not belong to your circle.' };
+    }
+
+    // 4. Update the Rate
+    await client.vendor.update({
+      where: { id: vendorId },
+      data: { ratePerTrip: rate },
+    });
+
+    return { status: 200, message: 'Rate updated successfully' };
+  } catch (error) {
+    console.error('Error updating vendor rate:', error);
+    return { status: 500, message: 'Internal server error' };
+  }
+};
