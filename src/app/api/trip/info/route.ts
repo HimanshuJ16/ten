@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         t."video",
         t.distance,
         b.id as "bookingId",
+        b."readableId" as "readableId",
         b."scheduledDateTime" as "journeyDate",
         b.status as "bookingStatus",
         h.name as "hydrantName",
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
       video: trip.video,
       booking: {
         id: trip.bookingId,
+        readableId: trip.readableId,
         journeyDate: trip.journeyDate ? new Date(trip.journeyDate).toISOString() : null,
         status: trip.bookingStatus
       },

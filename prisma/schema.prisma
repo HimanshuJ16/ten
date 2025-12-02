@@ -208,6 +208,7 @@ model Destination {
 
 model Booking {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  readableId       Int      @unique @default(autoincrement())
   type              String   @default("normal")  //normal or emergency
   bookingType       String   @default("regular")  //scheduled or regular
   scheduledDateTime DateTime?

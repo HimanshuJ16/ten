@@ -31,6 +31,7 @@ export interface Booking {
   trip: any;
   approved: boolean | undefined
   id: string
+  readableId: number
   type: string
   bookingType: string
   scheduledDateTime: Date

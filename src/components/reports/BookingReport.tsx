@@ -24,6 +24,10 @@ const columns = [
     cell: ({ row }: { row: { index: number } }) => <span>{row.index + 1}</span>,
   },
   {
+    accessorKey: "readableId",
+    header: "Booking ID",
+  },
+  {
     accessorKey: "vendorName",
     header: "Vendor Name",
   },
@@ -62,6 +66,11 @@ const columns = [
   {
     accessorKey: "totalDistance",
     header: "Total Distance (km)",
+    // --- FIXED: Format to 2 decimal places in Table ---
+    cell: ({ row }: { row: any }) => {
+      const val = row.getValue("totalDistance");
+      return <span>{typeof val === 'number' ? val.toFixed(2) : val}</span>
+    },
   },
 ]
 
@@ -83,6 +92,14 @@ export default function BookingReport() {
     fetchUserRoleAndVendors()
   }, [])
 
+  // Helper to format values for export
+  const formatForExport = (key: string, value: any) => {
+    if (key === "totalDistance" && typeof value === "number") {
+      return value.toFixed(2)
+    }
+    return String(value)
+  }
+
   const handleCopyToClipboard = () => {
     if (!data) return
     const headers = columns.map((col) => col.header).join("\t")
@@ -91,7 +108,7 @@ export default function BookingReport() {
         (row, index) =>
           `${index + 1}\t${columns
             .slice(1)
-            .map((col) => row[col.accessorKey as keyof BookingReportData])
+            .map((col) => formatForExport(col.accessorKey!, row[col.accessorKey as keyof BookingReportData]))
             .join("\t")}`,
       )
       .join("\n")
@@ -106,7 +123,7 @@ export default function BookingReport() {
         (row, index) =>
           `${index + 1},${columns
             .slice(1)
-            .map((col) => `"${row[col.accessorKey as keyof BookingReportData]}"`) // Add quotes for CSV
+            .map((col) => `"${formatForExport(col.accessorKey!, row[col.accessorKey as keyof BookingReportData])}"`)
             .join(",")}`,
       )
       .join("\n")
@@ -123,7 +140,8 @@ export default function BookingReport() {
     const exportData = data.map((row, index) => {
       const newRow: Record<string, any> = { "S.No": index + 1 }
       columns.slice(1).forEach((col) => {
-        newRow[col.header] = row[col.accessorKey as keyof BookingReportData]
+        // Use formatter for Excel values too
+        newRow[col.header] = formatForExport(col.accessorKey!, row[col.accessorKey as keyof BookingReportData])
       })
       return newRow
     })
@@ -136,9 +154,11 @@ export default function BookingReport() {
   const handleDownloadPDF = () => {
     if (!data) return
     const doc = new jsPDF({ orientation: "landscape" })
+    
+    // Use formatter for PDF table data
     const tableData: RowInput[] = data.map((row, index) => [
       index + 1,
-      ...columns.slice(1).map((col) => String(row[col.accessorKey as keyof BookingReportData])),
+      ...columns.slice(1).map((col) => formatForExport(col.accessorKey!, row[col.accessorKey as keyof BookingReportData])),
     ])
 
     doc.setFontSize(16)
@@ -155,7 +175,7 @@ export default function BookingReport() {
       body: tableData,
       startY: 35,
       theme: "grid",
-      styles: { fontSize: 7, cellPadding: 1 }, // Smaller font for landscape
+      styles: { fontSize: 7, cellPadding: 1 }, 
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       alternateRowStyles: { fillColor: [224, 224, 224] },
     })
@@ -163,9 +183,9 @@ export default function BookingReport() {
     if (data.length > 0) {
       const totalDistance = data.reduce((acc, row) => acc + row.totalDistance, 0)
       
-      // Create a "Total" row that spans all columns before the last one
       const totalRow = new Array(columns.length - 1).fill("")
       totalRow[0] = "Total:"
+      // Ensure total is also formatted
       totalRow.push(totalDistance.toFixed(2))
 
       autoTable(doc, {

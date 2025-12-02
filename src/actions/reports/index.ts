@@ -558,14 +558,15 @@ export const getBookingsReport = async (startDate?: Date, endDate?: Date, vendor
         }
 
         return {
+          readableId: trip.booking?.readableId ? `#${trip.booking.readableId}` : "N/A",
           vendorName: trip.vehicle.vendor?.username || "N/A",
           hydrantName: trip.booking?.hydrant?.name || "N/A",
           destinationName: trip.booking?.destination?.name || "N/A",
           customerName: trip.booking?.customer?.name || "N/A",
           customerPhone: trip.booking?.customer?.contactNumber || "N/A",
           vehicleNumber: trip.vehicle.vehicleNumber,
-          startTime: trip.startTime ? format(trip.startTime, "PPP p") : "N/A",
-          endTime: trip.endTime ? format(trip.endTime, "PPP p") : "N/A",
+          startTime: trip.startTime ? format(trip.startTime, "dd-MM-yyyy hh:mm a") : "N/A",
+          endTime: trip.endTime ? format(trip.endTime, "dd-MM-yyyy hh:mm a") : "N/A",
           duration: duration,
           totalDistance: trip.distance || 0,
         }

@@ -254,6 +254,14 @@ export default function BookingsPage() {
 
   const columns: ColumnDef<Booking>[] = [
     {
+      accessorKey: "readableId",
+      header: "Booking Id",
+      cell: ({ row }) => {
+        const val = row.getValue("readableId");
+        return <span className="font-bold">#{val as string}</span>;
+      },
+    },
+    {
       accessorKey: "type",
       header: "Type",
     },

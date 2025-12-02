@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     const response = await sql`
       SELECT 
         b.id as "bookingId",
+        b."readableId" as "readableId",
         b."scheduledDateTime" as "journeyDate",
         b.status,
         h.name as "hydrantName",
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
 
     const formattedBookings = response.map(booking => ({
       bookingId: booking.bookingId,
+      readableId: booking.readableId,
       journeyDate: booking.journeyDate ? new Date(booking.journeyDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : null,
       hydrant: {
         name: booking.hydrantName,

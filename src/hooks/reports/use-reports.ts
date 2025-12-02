@@ -12,6 +12,7 @@ export interface TripReportData {
 }
 
 export type BookingReportData = {
+  readableId: string;
   vendorName: string
   hydrantName: string
   destinationName: string
