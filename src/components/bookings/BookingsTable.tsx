@@ -307,7 +307,7 @@ export default function BookingsPage() {
         if (booking.status === "cancelled" && booking.cancellationReason) {
           return (
             <Popover>
-              <PopoverTrigger className="underline cursor-pointer">Cancelled</PopoverTrigger>
+              <PopoverTrigger className="underline cursor-pointer">cancelled</PopoverTrigger>
               <PopoverContent>
                 <p className="text-sm font-semibold">Cancellation Reason:</p>
                 <p>{booking.cancellationReason}</p>
