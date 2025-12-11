@@ -6,9 +6,6 @@ export async function GET() {
     const bookings = await getBookings()
 
     if (bookings === null) {
-      // getBookings returns null on error or unauthorized inside, 
-      // but usually it handles its own auth check and returns null if failed/unauth.
-      // We might want to be more specific if possible, but for now 401/403/500 generic.
       return NextResponse.json({ message: 'Failed to fetch bookings or unauthorized' }, { status: 401 })
     }
 
@@ -22,7 +19,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+
+    // Parse Date string back to Date object if needed, but addBooking expects BookingSchemaType 
+    // where scheduledDateTime is z.date(). JSON payload will have string.
+    // However, Prisma/Zod interaction might need the date string to be converted before validation if Zod expects a Date object.
+
+    // Convert scheduledDateTime string to Date object if it exists
+    if (body.scheduledDateTime) {
+      body.scheduledDateTime = new Date(body.scheduledDateTime);
+    }
+
     const result = await addBooking(body)
+
+    if (!result) {
+      return NextResponse.json({ message: 'Unknown error occurred' }, { status: 500 })
+    }
 
     return NextResponse.json(result, { status: result.status })
   } catch (error) {
