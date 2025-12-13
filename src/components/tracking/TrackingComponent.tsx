@@ -36,7 +36,7 @@ export default function TrackingComponent() {
   // Fetch vehicle numbers when bookings change
   useEffect(() => {
     const fetchVehicleNumbers = async () => {
-    const vehicleData: { [key: string]: any } = {};
+      const vehicleData: { [key: string]: any } = {};
       for (const booking of bookings) {
         if (booking.vehicleId) {
           const response = await getVehicleNumber(booking.vehicleId)
@@ -96,7 +96,7 @@ export default function TrackingComponent() {
               <SelectContent>
                 {bookings.map((booking) => (
                   <SelectItem key={booking.id} value={booking.id}>
-                    {vehicleNumbers[booking.id]  || "Loading..."}
+                    Booking #{booking.readableId} - {vehicleNumbers[booking.id] || "Loading..."}
                   </SelectItem>
                 ))}
               </SelectContent>

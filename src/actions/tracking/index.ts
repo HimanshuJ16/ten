@@ -44,7 +44,7 @@ export const getActiveBookings = async () => {
         trip: {
           some: {
             status: {
-              in: ["ongoing", "pickup", "delivered"],
+              in: ["ongoing", "pickup"],
             },
           },
         },
